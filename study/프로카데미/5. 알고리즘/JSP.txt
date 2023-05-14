@@ -1,0 +1,1795 @@
+
+// Dir.cpp : 애플리케이션에 대한 진입점을 정의합니다.
+//
+
+#include "framework.h"
+#include "Dir.h"
+#include <stack>
+
+
+#define MAX_LOADSTRING 100
+
+// 전역 변수:
+HINSTANCE hInst;                                // 현재 인스턴스입니다.
+WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
+WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
+HWND hWnd;
+
+
+
+// 이 코드 모듈에 포함된 함수의 을 전달합니다:
+ATOM                MyRegisterClass(HINSTANCE hInstance);
+BOOL                InitInstance(HINSTANCE, int);
+LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
+{
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	// TODO: 여기에 코드를 입력합니다.
+
+	// 전역 문자열을 초기화합니다.
+	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDC_DIR, szWindowClass, MAX_LOADSTRING);
+	MyRegisterClass(hInstance);
+
+	// 애플리케이션 초기화를 수행합니다:
+	if (!InitInstance(hInstance, nCmdShow))
+	{
+		return FALSE;
+	}
+
+	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DIR));
+
+	MSG msg;
+
+	// 기본 메시지 루프입니다:
+	while (GetMessage(&msg, nullptr, 0, 0))
+	{
+		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+
+	return (int)msg.wParam;
+}
+
+
+
+//  함수: MyRegisterClass()
+//
+//  용도: 창 클래스를 등록합니다.
+//
+ATOM MyRegisterClass(HINSTANCE hInstance)
+{
+	WNDCLASSEXW wcex;
+
+	wcex.cbSize = sizeof(WNDCLASSEX);
+
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = WndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_DIR));
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_DIR);
+	wcex.lpszClassName = szWindowClass;
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+	return RegisterClassExW(&wcex);
+}
+
+//
+//   함수: InitInstance(HINSTANCE, int)
+//
+//   용도: 인스턴스 핸들을 저장하고 주 창을 만듭니다.
+//
+//   주석:
+//
+//        이 함수를 통해 인스턴스 핸들을 전역 변수에 저장하고
+//        주 프로그램 창을 만든 다음 표시합니다.
+//
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+{
+	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
+
+	hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+
+	if (!hWnd)
+	{
+		return FALSE;
+	}
+
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
+
+	return TRUE;
+}
+
+//
+//  함수: WndProc(HWND, UINT, WPARAM, LPARAM)
+//
+//  용도: 주 창의 메시지를 처리합니다.
+//
+//  WM_COMMAND  - 애플리케이션 메뉴를 처리합니다.
+//  WM_PAINT    - 주 창을 그립니다.
+//  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
+//
+//
+
+
+#define HEIGHT 450
+#define WIDTH 1050
+#define PIXEL_SIZE 15
+
+struct LOAD
+{
+	explicit LOAD() {}
+	explicit LOAD(SHORT _X, SHORT _Y, SHORT _F, SHORT _G, SHORT _H)
+		: X(_X), Y(_Y), F(_F), G(_G), H(_H) {}
+	virtual ~LOAD() {}
+
+
+
+	SHORT X, Y;
+	SHORT F;   //G+H
+	SHORT G;   //시작점으로부터 이동비용
+	SHORT H;   //최종목적지까지 예상비용
+
+	bool operator<(const LOAD& arg) const
+	{
+		if (this->F != arg.F)
+			return this->F < arg.F;
+		else if (this->X == arg.X && this->Y == arg.Y) //???????????
+			return FALSE;
+		else if (this->H != arg.H)
+			return this->H < arg.H;
+		else if (this->G != arg.G)
+			return this->G < arg.G;
+		else if (this->X != arg.X)
+			return this->X < arg.X;
+		else //if (this->Y != arg.Y)
+			return this->Y < arg.Y;
+		//return !(this->Y < arg.Y) && !(arg.Y < this->Y);
+	}
+};
+
+
+//방향은 부모로 부터 방향을 뜻함
+enum class DIRECTION
+{
+	RD, RU, RR,      //오른쪽방향
+	UU, DD,         //교집합
+	LD, LL, LU      //왼쪽방향
+};
+
+
+
+struct NODE
+{
+	explicit NODE() {}
+	explicit NODE(NODE* _ParentNode, LOAD _Load, DIRECTION _Dir)
+		:ParentNode(_ParentNode), Load(_Load), Dir(_Dir) {}
+
+	virtual ~NODE() {}
+
+	NODE* ParentNode = NULL;
+	LOAD Load;
+	DIRECTION Dir;
+	//BOOL SevSearch = FALSE;
+	//SHORT SevParentX = 0;
+	//SHORT SevParentY = 0;
+
+};
+
+
+struct Point
+{
+	explicit Point() {}
+	explicit Point(int _x, int _y) : x(_x), y(_y) {}
+	int x, y;
+};
+
+
+USHORT StartX = 0;
+USHORT StartY = 0;
+
+USHORT EndX = 0;
+USHORT EndY = 0;
+
+SHORT g_Count;
+
+BOOL KeyB = FALSE;
+BOOL KeyL = FALSE;
+
+
+HBRUSH myBrush;
+HBRUSH OldBrush;
+HPEN MyPen;
+HPEN OldPen;
+
+
+std::map<LOAD, NODE*> OpenList;    //가야할 길
+std::map<LOAD, NODE*> CloseList;   //가봤던 길(LOAD가 달라도 중복추가되어 map으로함 수정해야할것
+std::map<LOAD, NODE*> BlockList;
+
+void AStarInit(void);
+void AStar(void);
+void AStarCreateNode(NODE* ParentNode);
+void OpenRendList(NODE* RendNode);
+void CloseRendList(NODE* RendNode);
+void EndPointPaint(SHORT X, SHORT Y);   //마지막에 지워진 도착점을 다시페인트칠해준다
+
+
+
+struct POINT_DIR
+{
+	explicit POINT_DIR() {}
+	virtual ~POINT_DIR() {}
+	explicit POINT_DIR(SHORT _X, SHORT _Y, DIRECTION _Dir, NODE* _ParentNode, BOOL _SevSearch = FALSE)
+		: X(_X), Y(_Y), Dir(_Dir), ParentNode(_ParentNode) {}
+	SHORT X;
+	SHORT Y;
+	DIRECTION Dir;
+	//BOOL SevSearch = NULL;
+	NODE* ParentNode;
+};
+
+//브리즌헴 알고리즘
+void BresenhamAlgorithm(SHORT StartX, SHORT StartY, SHORT EndX, SHORT EndY);
+void LowLine(Point p1, Point p2);
+void HighLine(Point p1, Point p2);
+
+
+void AStar()
+{
+	//먼저 최초 Start를 기준으로 노드를 8개 넣는다.
+	AStarInit();
+
+	while (true)
+	{
+		//모든 노드를 다뒤졌는데 나오지않는다면 그냥 종료한다. (메시지박스 같은걸로예외처리)
+		if (OpenList.size() == 0)
+		{
+			MessageBox(hWnd, _T("목적지에 도달할수 없습니다."), MB_OK, MB_ICONWARNING);
+			break;
+		}
+		NODE* FindNode;
+		//OpenList에서 F값이 가장 작은것을 뽑아서
+		std::map<LOAD, NODE*>::iterator iter = OpenList.begin();
+		FindNode = iter->second;
+
+		if (FindNode->Load.X == EndX && FindNode->Load.Y == EndY)
+		{
+			EndPointPaint(FindNode->Load.X, FindNode->Load.Y);
+			break;
+		}
+
+		//CloseList에 추가하고 렌더(파랑)
+		CloseList.insert(std::map<LOAD, NODE*>::value_type(FindNode->Load, FindNode));
+		CloseRendList(FindNode);
+
+		//OpenList에서 지운다
+		OpenList.erase(iter);
+
+		//OpenList에 insert
+		AStarCreateNode(FindNode);
+	}
+}
+
+
+void EndPointPaint(SHORT X, SHORT Y)
+{
+	//지워진 도착지점을 빨간색으로 칠함
+	////////////////////////////////////////////////////////////////////////////////////////////
+	HDC hdc = GetDC(hWnd);
+	myBrush = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
+	OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+	MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+	Rectangle(hdc, X, Y, X + PIXEL_SIZE, Y + PIXEL_SIZE);
+
+	SelectObject(hdc, OldPen);
+	SelectObject(hdc, OldBrush);
+
+
+	//다른지점에 EndPoint가 찍혔다면 기존의 StartPoint를 지운다.
+
+	DeleteObject(myBrush);
+	DeleteObject(MyPen);
+	ReleaseDC(hWnd, hdc);
+	////////////////////////////////////////////////////////////////////////////////////////
+}
+
+void OpenRendList(NODE* RendNode)
+{
+	//Rend
+	HDC hdc = GetDC(hWnd);
+	myBrush = (HBRUSH)CreateSolidBrush(RGB(0, 0, 255));
+	OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+
+	MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+	Rectangle(hdc, RendNode->Load.X, RendNode->Load.Y, RendNode->Load.X + PIXEL_SIZE, RendNode->Load.Y + PIXEL_SIZE);
+
+	SelectObject(hdc, OldPen);
+	SelectObject(hdc, OldBrush);
+	DeleteObject(myBrush);
+	DeleteObject(MyPen);
+	ReleaseDC(hWnd, hdc);
+}
+
+void CloseRendList(NODE* RendNode)
+{
+	//Rend
+	HDC hdc = GetDC(hWnd);
+	myBrush = (HBRUSH)CreateSolidBrush(RGB(255, 255, 0));
+	OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+	MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+	Rectangle(hdc, RendNode->Load.X, RendNode->Load.Y, RendNode->Load.X + 15, RendNode->Load.Y + 15);
+
+	SelectObject(hdc, OldPen);
+	SelectObject(hdc, OldBrush);
+	DeleteObject(myBrush);
+	DeleteObject(MyPen);
+	ReleaseDC(hWnd, hdc);
+}
+
+
+void BresenhamAlgorithm(SHORT StartX, SHORT StartY, SHORT EndX, SHORT EndY)
+{
+	if (StartX == 0 && StartY == 0 && EndX == 0 && EndY == 0)
+		return;
+
+	if (abs(EndX - StartX) > abs(EndY - StartY))
+	{
+		if (EndX > StartX)
+			LowLine(Point(StartX, StartY), Point(EndX, EndY));
+		else
+			LowLine(Point(EndX, EndY), Point(StartX, StartY));
+	}
+	else
+	{
+		if (EndY > StartY)
+			HighLine(Point(StartX, StartY), Point(EndX, EndY));
+		else
+			HighLine(Point(EndX, EndY), Point(StartX, StartY));
+	}
+
+}
+
+
+void LowLine(Point p1, Point p2)
+{
+	HDC hdc = GetDC(hWnd);
+
+
+	MyPen = (HPEN)CreatePen(PS_SOLID, 5, RGB(0, 255, 0));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+	MoveToEx(hdc, p1.x, p1.y, NULL);
+	LineTo(hdc, p2.x, p2.y);
+
+	int dx;
+	int dy;
+	int D;
+	int yi;
+
+	Point p;
+
+	p = p1;
+	dx = p2.x - p1.x;
+	dy = p2.y - p1.y;
+
+	yi = 1;
+	if (dy < 0)
+	{
+		yi = -1;
+		dy = -dy;
+	}
+
+	D = 2 * dy - dx;
+
+	while (p.x <= p2.x)
+	{
+		SetPixel(hdc, p.x, p.y, RGB(0, 0, 0));
+
+		if (D > 0)
+		{
+			p.y += yi;
+			D -= 2 * dx;
+		}
+		D += 2 * dy;
+		p.x++;
+	}
+
+	SelectObject(hdc, OldPen);
+	DeleteObject(MyPen);
+	ReleaseDC(hWnd, hdc);
+}
+
+
+void HighLine(Point p1, Point p2)
+{
+	HDC hdc = GetDC(hWnd);
+
+
+	MyPen = (HPEN)CreatePen(PS_SOLID, 5, RGB(0, 255, 0));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+	MoveToEx(hdc, p1.x, p1.y, NULL);
+	LineTo(hdc, p2.x, p2.y);
+
+
+	int dx;
+	int dy;
+	int D;
+	int xi;
+
+	Point p;
+
+	p = p1;
+	dx = p2.x - p1.x;
+	dy = p2.y - p1.y;
+
+	xi = 1;
+	if (dx < 0)
+	{
+		xi = -1;
+		dx = -dx;
+	}
+	D = 2 * dy - dx;
+
+	while (p.y <= p2.y)
+	{
+		SetPixel(hdc, p.x, p.y, RGB(0, 0, 0));
+
+		if (D > 0)
+		{
+			p.x += xi;
+			D -= 2 * dy;
+		}
+		D += 2 * dx;
+		p.y++;
+	}
+	SelectObject(hdc, OldPen);
+	DeleteObject(MyPen);
+	ReleaseDC(hWnd, hdc);
+}
+
+//JSP선언부
+void JumpPoint();           //JSP시작
+NODE* JumpPointStart();      //최초 8방향으로 진행
+NODE* JSP_InitSearch(NODE* sNode, DIRECTION dir);
+NODE* JSP_NodeSearch(NODE* sNode, DIRECTION dir);
+NODE* JSP_DirectSearch(NODE* sNode, DIRECTION dir);
+NODE* JSP_DiagonalSearch(NODE* sNode, DIRECTION dir);
+
+NODE* SevSearch(NODE* sNode, SHORT CurX, SHORT CurY, DIRECTION dir);
+
+void JSP_Connect(NODE* eNode);
+
+void MovePoint(SHORT& X, SHORT& Y, DIRECTION dir);
+
+BOOL IsBlockNode(USHORT X, USHORT Y);
+NODE* CreateNode(NODE* ParentNode, SHORT X, SHORT Y, DIRECTION Dir);
+
+SHORT RandomColor1;
+SHORT RandomColor2;
+SHORT RandomColor3;
+
+void JumpPoint()
+{
+	NODE* eNode = JumpPointStart();      //처음 Start를 기준으로 8방향 진행한다.
+	NODE* sNode;
+
+	while (OpenList.size() != 0)
+	{
+		if (eNode != nullptr)
+			break;
+
+		std::map<LOAD, NODE*>::iterator iter = OpenList.begin();
+		sNode = iter->second;
+		OpenList.erase(iter);
+		CloseList.insert(std::map<LOAD,NODE*>::value_type(sNode->Load,sNode));
+
+		eNode = JSP_NodeSearch(sNode, sNode->Dir);
+	}
+
+	//nullptr이 전달된다면 찾을수없다는 MSGBOX출력
+	JSP_Connect(eNode);
+}
+
+
+
+NODE* JumpPointStart()
+{
+	srand(time(NULL));
+
+	NODE* StartNode = new NODE;
+	memset(StartNode, 0, sizeof(*StartNode));
+	StartNode->Load.X = StartX;
+	StartNode->Load.Y = StartY;
+	CloseList.insert(std::map<LOAD, NODE*>::value_type(StartNode->Load, StartNode));
+
+	//8방향으로 넣는다. 
+	NODE* eNode;
+	eNode = JSP_InitSearch(StartNode, DIRECTION::RR);
+	if (eNode != nullptr)
+		return eNode;
+
+	eNode = JSP_InitSearch(StartNode, DIRECTION::RD);
+	if (eNode != nullptr)
+		return eNode;
+
+	eNode = JSP_InitSearch(StartNode, DIRECTION::RU);
+	if (eNode != nullptr)
+		return eNode;
+
+	eNode = JSP_InitSearch(StartNode, DIRECTION::UU);
+	if (eNode != nullptr)
+		return eNode;
+
+	eNode = JSP_InitSearch(StartNode, DIRECTION::DD);
+	if (eNode != nullptr)
+		return eNode;
+
+	eNode = JSP_InitSearch(StartNode, DIRECTION::LD);
+	if (eNode != nullptr)
+		return eNode;
+
+	eNode = JSP_InitSearch(StartNode, DIRECTION::LL);
+	if (eNode != nullptr)
+		return eNode;
+
+	eNode = JSP_InitSearch(StartNode, DIRECTION::LU);
+	if (eNode != nullptr)
+		return eNode;
+
+	return nullptr;
+}
+
+
+NODE* JSP_InitSearch(NODE* sNode, DIRECTION dir)
+{
+	RandomColor1 = rand() % 256;
+	RandomColor2 = rand() % 256;
+	RandomColor3 = rand() % 256;
+
+	//수직-수평 주탐색
+	if (dir == DIRECTION::RR || dir == DIRECTION::UU || dir == DIRECTION::LL || dir == DIRECTION::DD)
+		return JSP_DirectSearch(sNode, dir);
+	//대각선 탐색
+	else
+		return JSP_DiagonalSearch(sNode, dir);
+}
+
+
+
+NODE* JSP_NodeSearch(NODE* sNode, DIRECTION dir)
+{
+	SHORT X = sNode->Load.X;
+	SHORT Y = sNode->Load.Y;
+	//여기서 리턴이 제대로안되서 위에서ㅏ 끝났다고 판단해버린다.
+
+	NODE* eNode = nullptr;
+
+
+	if (dir == DIRECTION::RR)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::RR);
+		if (eNode != nullptr)
+			return eNode;
+
+
+
+		//RR => RR, RU
+		//위가 Blcok, 위오른쪽이 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::RU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+
+		//RR -> RR,RD
+		//아래가 Block, 아래오른쪽이 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::RD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+	}
+	else if (dir == DIRECTION::LL)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::LL);
+		if (eNode != nullptr)
+			return eNode;
+
+		//LL => LL, LU
+		//위가 Blcok, 위 왼쪽이 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::LU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+
+		//LL => LL, LD
+		//아래가 Block, 아래왼쪽이 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::LD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+	}
+
+	else if (dir == DIRECTION::DD)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::DD);
+		if (eNode != nullptr)
+			return eNode;
+
+		//DD => DD, LD
+		//왼쪽이 Blcok, 왼쪽 아래가 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::LD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+		//DD => DD, RD
+		// 오른쪽이 Block, 아래오른쪽이 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::RD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+	}
+
+	else if (dir == DIRECTION::UU)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::UU);
+		if (eNode != nullptr)
+			return eNode;
+
+
+		//UU => UU, LU
+		//왼쪽이 Blcok, 왼쪽 위가 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::LU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+		//UU => UU, RU
+		//오른쪽이 Block, 오른쪽 위가 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::RU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+	}
+
+	else if (dir == DIRECTION::RD)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::RD);
+		if (eNode != nullptr)
+			return eNode;
+
+		//RD => RD, LD, DD
+		//왼쪽이 Blcok, 왼쪽 아래가 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::LD);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::DD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+		//RD => RD, RU, RR
+		//위가 Block, 오른쪽 위가 NonBlock
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::RR);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::RU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+	}
+
+	else if (dir == DIRECTION::LD)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::LD);
+		if (eNode != nullptr)
+			return eNode;
+
+		//LD => LD, LL, LU
+		// 위가 block, 위 왼쪽이 Non-Block
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::LL);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::LU);
+			if (eNode != nullptr)
+				return eNode;
+
+		}
+
+		//LD => LD, RD, DD
+		//오른쪽이 Block, 오른쪽아래가 Non-block
+		//==> 코너조건 부합
+		if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::DD);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::RD);
+			if (eNode != nullptr)
+				return eNode;
+
+		}
+	}
+	else if (dir == DIRECTION::LU)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::LU);
+		if (eNode != nullptr)
+			return eNode;
+
+		//LU => LU, LD, LL
+		// 아래가 block, 아래 왼쪽이 Non-Block
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::LL);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::LD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+
+		//LU => LU, RU, UU
+		//오른쪽이 Block, 오른쪽 위가 Non-block
+		//==> 코너조건 부합
+		if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::UU);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::RU);
+			if (eNode != nullptr)
+				return eNode;
+
+		}
+
+	}
+
+	else if (dir == DIRECTION::RU)
+	{
+		eNode = JSP_InitSearch(sNode, DIRECTION::RU);
+		if (eNode != nullptr)
+			return eNode;
+
+		//RU => RU, LU, UU
+		// 왼쪽이 block,  왼쪽 위가 Non-Block
+		//==> 코너조건 부합
+		if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+			(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::UU);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::LU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+
+		//RU => RU, RD, RR
+		// 아래가 Block, 아래오른쪽이 Non-block
+		//==> 코너조건 부합
+		if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+			(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+		{
+			eNode = JSP_InitSearch(sNode, DIRECTION::RR);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = JSP_InitSearch(sNode, DIRECTION::RD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+	}
+	return nullptr;
+}
+
+
+void MovePoint(SHORT& X, SHORT& Y, DIRECTION dir)
+{
+	//노드의 방향대로 일단 이동.
+	if (dir == DIRECTION::RR) X += PIXEL_SIZE;
+	else if (dir == DIRECTION::LL) X -= PIXEL_SIZE;
+	else if (dir == DIRECTION::DD) Y += PIXEL_SIZE;
+	else if (dir == DIRECTION::UU) Y -= PIXEL_SIZE;
+	else if (dir == DIRECTION::LD) X -= PIXEL_SIZE, Y += PIXEL_SIZE;
+	else if (dir == DIRECTION::LU) X -= PIXEL_SIZE, Y -= PIXEL_SIZE;
+	else if (dir == DIRECTION::RD) X += PIXEL_SIZE, Y += PIXEL_SIZE;
+	else if (dir == DIRECTION::RU) X += PIXEL_SIZE, Y -= PIXEL_SIZE;
+}
+
+
+
+
+//노드를 만들고 OpenList에 추가한다.
+NODE* CreateNode(NODE* ParentNode, SHORT X, SHORT Y, DIRECTION Dir)
+{
+	//처음시작일경우, 
+	//이미 확인한 노드인지 확인.
+	for (std::map<LOAD, NODE*>::iterator iter = CloseList.begin(); iter != CloseList.end(); ++iter)
+	{
+		if ((iter->first.X == X && iter->first.Y == Y))
+			return nullptr;
+	}
+
+
+
+	NODE* nNode = new NODE;
+	memset(nNode, 0, sizeof(*nNode));
+	nNode->ParentNode = ParentNode;
+	nNode->Dir = Dir;
+	nNode->Load.X = X;
+	nNode->Load.Y = Y;
+	OpenList.insert(std::map<LOAD, NODE*>::value_type(nNode->Load, nNode));
+
+	HDC hdc = GetDC(hWnd);
+	myBrush = (HBRUSH)CreateSolidBrush(RGB(0, 0, 255));
+	OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+	Rectangle(hdc, nNode->Load.X, nNode->Load.Y, nNode->Load.X + PIXEL_SIZE, nNode->Load.Y + PIXEL_SIZE);
+
+	SelectObject(hdc, OldBrush);
+	DeleteObject(myBrush);
+	ReleaseDC(hWnd, hdc);
+
+	return nNode;
+}
+
+
+
+NODE* JSP_DirectSearch(NODE* sNode, DIRECTION dir)
+{
+	HDC hdc = GetDC(hWnd);
+
+	myBrush = (HBRUSH)CreateSolidBrush(RGB(RandomColor1, RandomColor2, RandomColor3));
+	OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+	MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+	SHORT X = sNode->Load.X;
+	SHORT Y = sNode->Load.Y;
+
+	BOOL IsDraw = TRUE;
+
+	while (true)
+	{
+		//좌표 이동
+		MovePoint(X, Y, dir);
+
+		//목적지 확인
+		if (X == EndX && Y == EndY)
+			return CreateNode(sNode, X, Y, sNode->Dir);
+
+		//이미 확인한 노드인지 확인.
+		for (std::map<LOAD, NODE*>::iterator iter = CloseList.begin(); iter != CloseList.end(); ++iter)
+		{
+			if ((iter->first.X == X && iter->first.Y == Y))
+				return nullptr;
+		}
+
+		//해당좌표가 block일 경우
+		if (IsBlockNode(X, Y) == TRUE)
+			return nullptr;
+
+		//좌표가 바깥으로 빠진경우
+		if ((X >= WIDTH || Y >= HEIGHT) || X < 0 || Y < 0)
+			return nullptr;
+
+
+
+		for (std::map<LOAD, NODE*>::iterator iter = OpenList.begin(); iter != OpenList.end(); ++iter)
+		{
+			if ((iter->first.X == X && iter->first.Y == Y))
+				IsDraw = FALSE;
+		}
+
+		if (IsDraw == TRUE)
+			Rectangle(hdc, X, Y, X + PIXEL_SIZE, Y + PIXEL_SIZE);
+		IsDraw = TRUE;
+
+
+		//========================================================================
+		// (수직수평 코너탐색) - 주 탐색일 경우
+		//========================================================================
+		// mNode자리에 노드를 생성한다.
+
+		if (dir == DIRECTION::RR)
+		{
+			//RR => RR, RU
+			//위가 Blcok, 위오른쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::RR);
+				return nullptr;
+			}
+
+
+			//RR -> RR,RD
+			//아래가 Block, 아래오른쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::RR);
+				return nullptr;
+			}
+		}
+		else if (dir == DIRECTION::LL)
+		{
+
+			//LL => LL, LU
+			//위가 Blcok, 위 왼쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::LL);
+				return nullptr;
+			}
+
+
+			//LL => LL, LD
+			//아래가 Block, 아래왼쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::LL);
+				return nullptr;
+			}
+
+		}
+
+		else if (dir == DIRECTION::DD)
+		{
+			//DD => DD, LD
+			//왼쪽이 Blcok, 왼쪽 아래가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::DD);
+				return nullptr;
+			}
+
+			//DD => DD, RD
+			// 오른쪽이 Block, 아래오른쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::DD);
+				return nullptr;
+			}
+		}
+
+		else if (dir == DIRECTION::UU)
+		{
+			//UU => UU, LU
+			//왼쪽이 Blcok, 왼쪽 위가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::UU);
+				return nullptr;
+			}
+
+			//UU => UU, RU
+			//오른쪽이 Block, 오른쪽 위가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::UU);
+				return nullptr;
+			}
+		}
+	}
+	SelectObject(hdc, OldPen);
+	SelectObject(hdc, OldBrush);
+
+	DeleteObject(myBrush);
+	DeleteObject(MyPen);
+	ReleaseDC(hWnd, hdc);
+}
+
+
+NODE* JSP_DiagonalSearch(NODE* sNode, DIRECTION dir)
+{
+	HDC hdc = GetDC(hWnd);
+
+	myBrush = (HBRUSH)CreateSolidBrush(RGB(RandomColor1, RandomColor2, RandomColor3));
+	OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+	MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+	//부모노드를 백업한다.
+	NODE* eNode;
+	SHORT X = sNode->Load.X;
+	SHORT Y = sNode->Load.Y;
+
+	BOOL IsDraw = TRUE;
+	//좌표 이동
+	MovePoint(X, Y, dir);
+
+	while (true)
+	{
+		//목적지 확인
+		if (X == EndX && Y == EndY)
+			return CreateNode(sNode, X, Y, sNode->Dir);/*방향의미없음*/
+
+		  //이미 확인한 노드인지 확인.
+		for (std::map<LOAD, NODE*>::iterator iter = CloseList.begin(); iter != CloseList.end(); ++iter)
+		{
+			if ((iter->first.X == X && iter->first.Y == Y))
+				return nullptr;
+		}
+
+		//해당좌표가 block일 경우
+		if (IsBlockNode(X, Y) == TRUE)
+			return nullptr;
+
+		//좌표가 바깥으로 빠진경우
+		if ((X >= WIDTH || Y >= HEIGHT) || X < 0 || Y < 0)
+			return nullptr;
+
+		for (std::map<LOAD, NODE*>::iterator iter = OpenList.begin(); iter != OpenList.end(); ++iter)
+		{
+			if ((iter->first.X == X && iter->first.Y == Y))
+				IsDraw = FALSE;
+		}
+
+		if (IsDraw == TRUE)
+			Rectangle(hdc, X, Y, X + PIXEL_SIZE, Y + PIXEL_SIZE);
+
+		IsDraw = TRUE;
+
+
+		//========================================================================
+		// 대각선 코너탐색
+		//========================================================================
+		// 대각선은 보조탐색이 존재하지않음
+
+
+		if (dir == DIRECTION::RD)
+		{
+
+			//RD => RD, LD, DD
+			//왼쪽이 Blcok, 왼쪽 아래가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::RD);
+				return nullptr;
+			}
+
+			//RD => RD, RU, RR
+			//위가 Block, 오른쪽 위가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::RD);
+				return nullptr;
+			}
+
+		}
+
+		else if (dir == DIRECTION::LD)
+		{
+
+			//LD => LD, LL, LU
+			// 위가 block, 위 왼쪽이 Non-Block
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::LD);
+			}
+
+			//LD => LD, RD, DD
+			//오른쪽이 Block, 오른쪽아래가 Non-block
+			//==> 코너조건 부합
+			if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::LD);
+			}
+		}
+
+
+		else if (dir == DIRECTION::LU)
+		{
+
+			//LU => LU, LD, LL
+			// 아래가 block, 아래 왼쪽이 Non-Block
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::LU);
+			}
+
+
+			//LU => LU, RU, UU
+			//오른쪽이 Block, 오른쪽 위가 Non-block
+			//==> 코너조건 부합
+			if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::LU);
+			}
+
+		}
+
+		else if (dir == DIRECTION::RU)
+		{
+			//RU => RU, LU, UU
+			// 왼쪽이 block,  왼쪽 위가 Non-Block
+			//==> 코너조건 부합
+			if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::RU);
+			}
+
+			//RU => RU, RD, RR
+			// 아래가 Block, 아래오른쪽이 Non-block
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, X, Y, DIRECTION::RU);
+			}
+		}
+
+
+
+		//===============================================
+		// 상하좌우 보조탐색
+		//===============================================
+		if (dir == DIRECTION::LD)
+		{
+			eNode = SevSearch(sNode, X, Y, DIRECTION::LL);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = SevSearch(sNode, X, Y, DIRECTION::DD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+		else if (dir == DIRECTION::LU)
+		{
+			eNode = SevSearch(sNode, X, Y, DIRECTION::LL);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = SevSearch(sNode, X, Y, DIRECTION::UU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+		else if (dir == DIRECTION::RD)
+		{
+			eNode = SevSearch(sNode, X, Y, DIRECTION::RR);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = SevSearch(sNode, X, Y, DIRECTION::DD);
+			if (eNode != nullptr)
+				return eNode;
+		}
+		else if (dir == DIRECTION::RU)
+		{
+			eNode = SevSearch(sNode, X, Y, DIRECTION::RR);
+			if (eNode != nullptr)
+				return eNode;
+
+			eNode = SevSearch(sNode, X, Y, DIRECTION::UU);
+			if (eNode != nullptr)
+				return eNode;
+		}
+		//좌표 이동
+		MovePoint(X, Y, dir);
+
+	}
+}
+
+
+
+
+//==============================================================
+// 보조탐색 - 수평-수직 탐색
+//==============================================================
+// 
+NODE* SevSearch(NODE* sNode, SHORT CurX, SHORT CurY, DIRECTION dir)
+{
+	HDC hdc = GetDC(hWnd);
+	myBrush = (HBRUSH)CreateSolidBrush(RGB(RandomColor1, RandomColor2, RandomColor3));
+	OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+	MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+	OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+	SHORT pX = CurX;
+	SHORT pY = CurY;
+
+	SHORT X = CurX;
+	SHORT Y = CurY;
+
+	BOOL IsDraw = TRUE;
+
+	while (true)
+	{
+		//좌표 이동
+		MovePoint(X, Y, dir);
+
+		//목적지 확인
+		if (X == EndX && Y == EndY)
+			return CreateNode(sNode, X, Y, sNode->Dir);
+
+		//이미 확인한 노드인지 확인.
+		for (std::map<LOAD, NODE*>::iterator iter = CloseList.begin(); iter != CloseList.end(); ++iter)
+		{
+			if ((iter->first.X == X && iter->first.Y == Y))
+				return nullptr; /*         */
+		}
+
+
+
+		//해당좌표가 block일 경우
+		if (IsBlockNode(X, Y) == TRUE)
+			return nullptr;
+
+		//좌표가 바깥으로 빠진경우
+		if ((X >= WIDTH || Y >= HEIGHT) || X < 0 || Y < 0)
+			return nullptr;
+
+
+		for (std::map<LOAD, NODE*>::iterator iter = OpenList.begin(); iter != OpenList.end(); ++iter)
+		{
+			if ((iter->first.X == X && iter->first.Y == Y))
+				IsDraw = FALSE;
+		}
+
+		if(IsDraw == TRUE)
+			Rectangle(hdc, X, Y, X + PIXEL_SIZE, Y + PIXEL_SIZE);
+		IsDraw = TRUE;
+
+
+
+		if (dir == DIRECTION::RR)
+		{
+			//RR => RR, RU
+			//위가 Blcok, 위오른쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::RR);
+				return nullptr;
+			}
+
+
+			//RR -> RR,RD
+			//아래가 Block, 아래오른쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::RR);
+				return nullptr;
+			}
+		}
+
+
+
+		else if (dir == DIRECTION::LL)
+		{
+			//LL => LL, LU
+			//위가 Blcok, 위 왼쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y - PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::LL);
+				return nullptr;
+			}
+
+
+			//LL => LL, LD
+			//아래가 Block, 아래왼쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X, Y + PIXEL_SIZE) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::LL);
+				return nullptr;
+			}
+		}
+
+
+		else if (dir == DIRECTION::DD)
+		{
+			//DD => DD, LD
+			//왼쪽이 Blcok, 왼쪽 아래가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::DD);
+				return nullptr;
+			}
+
+			//DD => DD, RD
+			// 오른쪽이 Block, 아래오른쪽이 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y + PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::DD);
+				return nullptr;
+			}
+		}
+		else if (dir == DIRECTION::UU)
+		{
+			//UU => UU, LU
+			//왼쪽이 Blcok, 왼쪽 위가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X - PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X - PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::UU);
+				return nullptr;
+			}
+
+			//UU => UU, RU
+			//오른쪽이 Block, 오른쪽 위가 NonBlock
+			//==> 코너조건 부합
+			if ((IsBlockNode(X + PIXEL_SIZE, Y) == TRUE) &&
+				(IsBlockNode(X + PIXEL_SIZE, Y - PIXEL_SIZE) == FALSE))
+			{
+				CreateNode(sNode, pX, pY, DIRECTION::UU);
+				return nullptr;
+			}
+		}
+	}
+}
+
+
+void JSP_Connect(NODE* eNode)
+{
+	if (eNode == nullptr)
+	{
+		MessageBox(hWnd, _T("목적지에 도달할수 없습니다."), MB_OK, MB_ICONWARNING);
+	}
+
+
+
+
+
+}
+
+BOOL IsBlockNode(USHORT X, USHORT Y)
+{
+	if (BlockList.size() == 0)
+		return FALSE;
+
+	if (X > WIDTH || Y > HEIGHT)
+		return FALSE;
+
+	for (std::map<LOAD, NODE*>::iterator iter = BlockList.begin(); iter != BlockList.end(); ++iter)
+	{
+		if ((iter->first.X == X && iter->first.Y == Y))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+
+
+void AStarInit()
+{
+	NODE* StartNode = new NODE;
+	memset(StartNode, 0, sizeof(*StartNode));
+	StartNode->Load.X = StartX;
+	StartNode->Load.Y = StartY;
+
+	AStarCreateNode(StartNode);
+}
+
+
+//8방향 노드를 new하여 map에 추가한다.
+void AStarCreateNode(NODE* ParentNode)
+{
+	for (int i = -PIXEL_SIZE; i <= PIXEL_SIZE; i += PIXEL_SIZE)
+	{
+		for (int j = -PIXEL_SIZE; j <= PIXEL_SIZE; j += PIXEL_SIZE)
+		{
+			//부모노드는 제외한다.
+			if (i == 0 && j == 0)
+				continue;
+
+			LOAD nLoad;
+			nLoad.X = ParentNode->Load.X + j;
+			nLoad.Y = ParentNode->Load.Y + i;
+			nLoad.G = ParentNode->Load.G + 1;
+			nLoad.H = (abs(ParentNode->Load.X + j - EndX) + abs(ParentNode->Load.Y + i - EndY)) / PIXEL_SIZE;
+			nLoad.F = nLoad.G + nLoad.H;
+
+			if (nLoad.X < 0 || nLoad.Y < 0)
+				continue;
+
+			if (nLoad.X > WIDTH - PIXEL_SIZE || nLoad.Y > HEIGHT - PIXEL_SIZE)
+				continue;
+
+			if (nLoad.X == StartX && nLoad.Y == StartY)
+				continue;
+
+
+			//OpenList와 CloseList를 모두 찾아보고, 없다면 insert한다.
+			//if (OpenList.find(nLoad) != OpenList.end())
+			//{
+			//   continue;
+			//}
+			//if (CloseList.find(nLoad) != CloseList.end())
+			//{
+			//   continue;
+			//}
+			//if (BlockList.find(nLoad) != BlockList.end())
+			//{
+			//   continue;
+			//}
+
+
+			BOOL valid = TRUE;
+			for (std::map<LOAD, NODE*>::iterator iter = OpenList.begin(); iter != OpenList.end(); ++iter)
+				if (iter->first.X == nLoad.X &&
+					iter->first.Y == nLoad.Y)
+					valid = FALSE;
+
+			for (std::map<LOAD, NODE*>::iterator iter = CloseList.begin(); iter != CloseList.end(); ++iter)
+				if (iter->first.X == nLoad.X &&
+					iter->first.Y == nLoad.Y)
+					valid = FALSE;
+
+			for (std::map<LOAD, NODE*>::iterator iter = BlockList.begin(); iter != BlockList.end(); ++iter)
+				if (iter->first.X == nLoad.X &&
+					iter->first.Y == nLoad.Y)
+					valid = FALSE;
+
+			if (valid == FALSE)
+				continue;
+
+			NODE* nNode = new NODE;
+			nNode->ParentNode = ParentNode;
+			nNode->Load = nLoad;
+
+			OpenList.insert(std::map<LOAD, NODE*>::value_type(nNode->Load, nNode));
+			OpenRendList(nNode);
+		}
+	}
+}
+
+
+
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		// 메뉴 선택을 구문 분석합니다:
+		switch (wmId)
+		{
+		case IDM_ABOUT:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_EXIT:
+			DestroyWindow(hWnd);
+			break;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
+	break;
+	case WM_KEYUP:
+	{
+		switch (wParam)
+		{
+			//B
+		case 0x42:
+		{
+			KeyB = FALSE;
+		}
+		break;
+		}
+
+	}
+	break;
+	case WM_KEYDOWN:
+	{
+		switch (wParam)
+		{
+			//B키를 누르면 블럭이 그려짐
+		case 0x42:
+			KeyB = TRUE;
+			break;
+
+
+			//A키를 누르면 길찾기 시작
+		case 0x41:
+		{
+			AStar();
+		}
+		break;
+
+		//J키를 누르면 JSP시작
+		case 0x4A:
+		{
+			JumpPoint();
+		}
+		break;
+		case 0x4C:
+		{
+
+		}
+		break;
+		}
+	}
+	break;
+
+
+	case WM_MOUSEMOVE:
+	{
+		if (KeyB == FALSE)
+			break;
+
+		int xPos = GET_X_LPARAM(lParam);
+		int yPos = GET_Y_LPARAM(lParam);
+
+		xPos -= xPos % PIXEL_SIZE;
+		yPos -= yPos % PIXEL_SIZE;
+
+		HDC hdc = GetDC(hWnd);
+		myBrush = (HBRUSH)CreateSolidBrush(RGB(150, 150, 150));
+		OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+		MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+		OldPen = (HPEN)SelectObject(hdc, MyPen);
+		Rectangle(hdc, xPos, yPos, xPos + PIXEL_SIZE, yPos + PIXEL_SIZE);
+
+		NODE* nNode = new NODE;
+		memset(nNode, 0, sizeof(*nNode));
+		nNode->Load.X = xPos;
+		nNode->Load.Y = yPos;
+
+		BlockList.insert(std::map<LOAD, NODE*>::value_type(nNode->Load, nNode));
+
+		//      
+
+
+		SelectObject(hdc, OldPen);
+		SelectObject(hdc, OldBrush);
+
+		DeleteObject(myBrush);
+		DeleteObject(MyPen);
+		ReleaseDC(hWnd, hdc);
+		break;
+
+	}
+	break;
+
+
+	//시작지점 그리기
+	case WM_LBUTTONUP:
+	{
+		int xPos = GET_X_LPARAM(lParam);
+		int yPos = GET_Y_LPARAM(lParam);
+
+		xPos -= xPos % PIXEL_SIZE;
+		yPos -= yPos % PIXEL_SIZE;
+
+		HDC hdc = GetDC(hWnd);
+		myBrush = (HBRUSH)CreateSolidBrush(RGB(0, 255, 0));
+		OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+		MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+		OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+		Rectangle(hdc, xPos, yPos, xPos + PIXEL_SIZE, yPos + PIXEL_SIZE);
+
+		SelectObject(hdc, OldPen);
+		SelectObject(hdc, OldBrush);
+
+
+		//다른지점에 StartPoint가 찍혔다면 기존의 StartPoint를 지운다.
+		if (StartX != 0 && StartY != 0)
+			Rectangle(hdc, StartX, StartY, StartX + PIXEL_SIZE, StartY + PIXEL_SIZE);
+
+
+		StartX = xPos;
+		StartY = yPos;
+
+		DeleteObject(myBrush);
+		DeleteObject(MyPen);
+		ReleaseDC(hWnd, hdc);
+		break;
+	}
+
+	case WM_RBUTTONUP:
+	{
+		int xPos = GET_X_LPARAM(lParam);
+		int yPos = GET_Y_LPARAM(lParam);
+
+		xPos -= xPos % PIXEL_SIZE;
+		yPos -= yPos % PIXEL_SIZE;
+
+		HDC hdc = GetDC(hWnd);
+		myBrush = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
+		OldBrush = (HBRUSH)SelectObject(hdc, myBrush);
+		MyPen = (HPEN)CreatePen(NULL, NULL, RGB(220, 220, 220));
+		OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+		Rectangle(hdc, xPos, yPos, xPos + PIXEL_SIZE, yPos + PIXEL_SIZE);
+
+		SelectObject(hdc, OldPen);
+		SelectObject(hdc, OldBrush);
+
+
+		//다른지점에 EndPoint가 찍혔다면 기존의 StartPoint를 지운다.
+		if (StartX != 0 && StartY != 0)
+			Rectangle(hdc, EndX, EndY, EndX + PIXEL_SIZE, EndY + PIXEL_SIZE);
+
+		EndX = xPos;
+		EndY = yPos;
+
+		DeleteObject(myBrush);
+		DeleteObject(MyPen);
+		ReleaseDC(hWnd, hdc);
+		break;
+	}
+	break;
+	case WM_PAINT:
+	{
+
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
+		MyPen = CreatePen(NULL, NULL, RGB(220, 220, 220));
+		OldPen = (HPEN)SelectObject(hdc, MyPen);
+
+		for (int j = 0; j < HEIGHT; j += PIXEL_SIZE)
+		{
+			for (int i = 0; i < WIDTH; i += PIXEL_SIZE)
+				Rectangle(hdc, i, j, i + PIXEL_SIZE, j + PIXEL_SIZE);
+		}
+
+		TCHAR Menual[] = _T("LeftMouse - StartPoint \
+                              RightMouse - EndPoint \
+                              A - Astar  / J - JumpPoint");
+
+		//메뉴얼
+		TextOut(hdc, 0, HEIGHT, Menual, _countof(Menual) - 1);
+		SelectObject(hdc, OldPen);
+		DeleteObject(MyPen);
+
+
+
+		EndPaint(hWnd, &ps);
+	}
+	break;
+	case WM_QUIT:
+	{
+		int a = 0;
+		//위둘을 프로그램 종료시 하고싶음
+	}
+
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
+}
+
+// 정보 대화 상자의 메시지 처리기입니다.
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
+}

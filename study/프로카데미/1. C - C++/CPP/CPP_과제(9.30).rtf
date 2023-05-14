@@ -1,0 +1,1139 @@
+{\rtf1\ansi\ansicpg949\deff0\nouicompat\deflang1033\deflangfe1042{\fonttbl{\f0\fmodern\fprq2\fcharset129 \'b8\'bc\'c0\'ba \'b0\'ed\'b5\'f1;}{\f1\fmodern\fprq1\fcharset0 Consolas;}{\f2\fmodern\fprq1\fcharset129 \'b5\'b8\'bf\'f2\'c3\'bc;}{\f3\fnil DotumChe;}{\f4\fnil\fcharset129 DotumChe;}}
+{\colortbl ;\red0\green128\blue0;\red0\green0\blue0;\red128\green128\blue128;\red163\green21\blue21;\red111\green0\blue138;\red0\green0\blue255;\red43\green145\blue175;\red47\green79\blue79;\red0\green128\blue128;}
+{\*\generator Riched20 10.0.18362}{\*\mmathPr\mdispDef1\mwrapIndent1440 }\viewkind4\uc1 
+\pard\nowidctlpar\sa200\sl276\slmult1\b\f0\fs40\lang18 <9.9\lang1042\'b0\'fa\'c1\'a6>\par
+\b0\fs20\lang18 C++  \'c5\'db\'c7\'c3\'b8\'b4 \'c7\'d4\'bc\'f6\'b8\'a6 \'c0\'cc\'bf\'eb\'c7\'d8\'bc\'ad new / delete \'b8\'de\'b8\'f0\'b8\'ae \'c3\'df\'c0\'fb\'b1\'e2 \'b0\'a3\'b4\'dc\'b9\'f6\'c0\'fc \'b8\'b8\'b5\'e9\'be\'ee\'ba\'b8\'b1\'e2,\par
+--- \'bb\'e7\'bf\'eb \'bb\'f9\'c7\'c3 \'c4\'da\'b5\'e5 ----------------------------\par
+int *p4 = _MemoryAlloc(int, 1);\par
+int *p400 = _MemoryAlloc(int, 100);\par
+char *pZ1 = _MemoryAlloc(char, 50);\par
+char *pZ2 = _MemoryAlloc(char, 150);\par
+char *pZ3 = _MemoryAlloc(char, 60);\par
+\lang1033 char *pZ4 = _MemoryAlloc(char, 70);\par
+\par
+MemoryRelease(p4);\par
+//MemoryRelease(p400);\par
+MemoryRelease(pZ1);\par
+//MemoryRelease(pZ2);\par
+MemoryRelease(pZ3);\par
+MemoryRelease(pZ3);\par
+MemoryRelease(pZ4);\par
+\par
+PrintAlloc();\par
+- \lang18\'c3\'e2\'b7\'c2\lang1033  \lang18\'b0\'e1\'b0\'fa\lang1033  ---------------------------\par
+Total Alloc Size : 734\par
+Total Alloc Count : 6\par
+Not Release Memory : [0x5fe060] 400 Bytes\par
+File : new_log.cpp : 194\par
+\par
+Not Release Memory : [0x5fe238] 150 Bytes\par
+\lang18 File : new_log.cpp : 197\par
+--------------------------------------\par
+--------------------------------------\par
+1. \'b8\'de\'b8\'f0\'b8\'ae \'c7\'d2\'b4\'e7\'b3\'bb\'bf\'aa \'b0\'fc\'b8\'ae\par
+struct xxxx\par
+\{\par
+\'b8\'de\'b8\'f0\'b8\'ae \'c6\'f7\'c0\'ce\'c5\'cd\par
+\'b8\'de\'b8\'f0\'b8\'ae \'bb\'e7\'c0\'cc\'c1\'ee\par
+\'c6\'c4\'c0\'cf\'c0\'cc\'b8\'a7\par
+\'c6\'c4\'c0\'cf\'c1\'d9\'b9\'f8\'c8\'a3\par
+\}\par
+\par
+\'c0\'c7 \'c7\'fc\'c5\'c2\'b7\'ce \'b8\'de\'b8\'f0\'b8\'ae \'c7\'d2\'b4\'e7\'b3\'bb\'bf\'aa \'b0\'fc\'b8\'ae,\par
+2. p = MemoryAlloc(int, 100);  \par
+   \'bf\'cd \'b0\'b0\'c0\'ba \'c7\'fc\'c5\'c2\'b7\'ce \'c5\'b8\'c0\'d4\'b0\'fa \'b0\'b3\'bc\'f6\'b8\'a6 \'c1\'f6\'c1\'a4\'c7\'cf\'bf\'a9 new int[100] \'c3\'b3\'b7\'b3 \'b5\'bf\'c0\'fb \'c7\'d2\'b4\'e7 \'c8\'c4 \'c1\'a4\'ba\'b8 \'c0\'fa\'c0\'e5.\par
+3. MemoryRelease(p);  \par
+   \'bf\'cd \'b0\'b0\'c0\'ba \'c7\'fc\'c5\'c2\'b7\'ce \'c7\'d2\'b4\'e7\'b9\'de\'c0\'ba \'c6\'f7\'c0\'ce\'c5\'cd\'b8\'a6 \'c0\'d4\'b7\'c2\'c7\'cf\'bf\'a9 \'b8\'de\'b8\'f0\'b8\'ae \'c7\'d8\'c1\'a6\par
+4. \'c1\'be\'b7\'e1\'bd\'c3 \'b7\'ce\'b1\'d7 \'c3\'e2\'b7\'c2\par
+\'c7\'c1\'b7\'ce\'b1\'d7\'b7\'a5 \'c1\'be\'b7\'e1 \'c0\'fc PrintAlloc();  \'c8\'a3\'c3\'e2\'b7\'ce \'b8\'de\'b8\'f0\'b8\'ae \'b9\'cc\'c7\'d8\'c1\'a6 \'b3\'bb\'bf\'aa \'c3\'e2\'b7\'c2\par
+\par
+\f1\par
+
+\pard\nowidctlpar\cf1\f2\fs19\lang1033 // ConsoleApplication1.cpp: \'c4\'dc\'bc\'d6 \'c0\'c0\'bf\'eb \'c7\'c1\'b7\'ce\'b1\'d7\'b7\'a5\'c0\'c7 \'c1\'f8\'c0\'d4\'c1\'a1\'c0\'bb \'c1\'a4\'c0\'c7\'c7\'d5\'b4\'cf\'b4\'d9.\cf2\par
+\cf1 //\cf2\par
+\par
+\cf3 #include\cf2  \cf4 "stdafx.h"\cf2\par
+\par
+\cf3 #define\cf2  \cf5 _MemoryAlloc\cf2 (Type, Size) MemoryAlloc<Type>(Size, \cf5 __DATE__\cf2  ,\cf5 __LINE__\cf2 );\par
+\par
+\cf6 struct\cf2  \cf7 ALLOC_INFO\cf2\par
+\{\par
+\tab\cf6 void\cf2 * ptr = \cf6 nullptr\cf2 ;\par
+\tab\cf6 int\cf2  size = 0;\par
+\tab\cf6 char\cf2  FileName[128];\par
+\tab\cf6 int\cf2  LineNum;\par
+\};\par
+\par
+\cf7 ALLOC_INFO\cf2  Manager[256];\par
+\cf6 int\cf2  Mag_Index = 0;\par
+\cf6 int\cf2  Total_AllocSize = 0;\par
+\cf6 int\cf2  Total_AllocCount = 0;\par
+\par
+\cf6 template\cf2 <\cf6 typename\cf2  \cf7 T\cf2 >\par
+\cf7 T\cf2 * MemoryAlloc(\cf6 int\cf2  \cf3 size\cf2 , \cf6 const\cf2  \cf6 char\cf2 * \cf3 fileName\cf2 , \cf6 int\cf2  \cf3 lineNum\cf2 )\par
+\{\par
+\tab Manager[Mag_Index].ptr = \cf6 new\cf2  \cf7 T\cf2 [\cf3 size\cf2 ];\par
+\tab Manager[Mag_Index].size = \cf3 size\cf2 ;\par
+\tab Manager[Mag_Index].LineNum = \cf3 lineNum\cf2 ;\par
+\tab StringCbCopyA(Manager[Mag_Index].FileName, \cf6 sizeof\cf2 (Manager[Mag_Index].FileName), \cf3 fileName\cf2 );\par
+\par
+\tab Total_AllocSize += \cf3 size\cf2 ;\par
+\tab Total_AllocCount += 1;\par
+\par
+\tab\cf6 return\cf2  (\cf7 T\cf2 *)Manager[Mag_Index++].ptr;\par
+\}\par
+\par
+\cf6 template\cf2  <\cf6 typename\cf2  \cf7 T\cf2 >\par
+\cf6 bool\cf2  MemoryRelease(\cf7 T\cf2 * \cf3 ptr\cf2 )\par
+\{\par
+\tab\cf6 for\cf2  (\cf6 int\cf2  i = 0; i < \cf5 _countof\cf2 (Manager); ++i)\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (Manager[i].ptr == \cf3 ptr\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 delete\cf2  \cf3 ptr\cf2 ;\par
+\tab\tab\tab Manager[i].ptr = \cf6 nullptr\cf2 ;\par
+\tab\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\tab\}\par
+\tab\}\par
+\tab\cf6 return\cf2  \cf6 false\cf2 ;\par
+\}\par
+\par
+\par
+\cf6 void\cf2  PrintAlloc()\par
+\{\par
+\tab printf(\cf4 "Total Alloc Size : %d\\n"\cf2 , Total_AllocSize);\par
+\tab printf(\cf4 "Total Alloc Count : %d\\n"\cf2 , Total_AllocCount);\par
+\par
+\tab\cf6 for\cf2  (\cf6 int\cf2  i = 0; i < \cf5 _countof\cf2 (Manager); ++i)\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (Manager[i].ptr != \cf6 nullptr\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab printf(\cf4 "Not Release Memory : [%p] %d Bytes\\n"\cf2 , Manager[i].ptr, Manager[i].size);\par
+\tab\tab\tab printf(\cf4 "File : %s : %d\\n"\cf2 , Manager[i].FileName, Manager[i].LineNum);\par
+\tab\tab\tab printf(\cf4 "\\n"\cf2 );\par
+\tab\tab\}\par
+\tab\}\par
+\par
+\par
+\}\par
+\par
+\par
+\par
+\par
+\cf6 int\cf2  main(\cf6 void\cf2 )\par
+\{\par
+\tab\cf6 int\cf2  *p4 = \cf5 _MemoryAlloc\cf2 (\cf6 int\cf2 , 1);\par
+\tab\cf6 int\cf2  *p400 = \cf5 _MemoryAlloc\cf2 (\cf6 int\cf2 , 100);\par
+\tab\cf6 char\cf2  *pZ1 = \cf5 _MemoryAlloc\cf2 (\cf6 char\cf2 , 50);\par
+\tab\cf6 char\cf2  *pZ2 = \cf5 _MemoryAlloc\cf2 (\cf6 char\cf2 , 150);\par
+\tab\cf6 char\cf2  *pZ3 = \cf5 _MemoryAlloc\cf2 (\cf6 char\cf2 , 60);\par
+\tab\cf6 char\cf2  *pZ4 = \cf5 _MemoryAlloc\cf2 (\cf6 char\cf2 , 70);\par
+\par
+\tab MemoryRelease(p4);\par
+\tab MemoryRelease(p400);\par
+\tab MemoryRelease(pZ1);\par
+\tab MemoryRelease(pZ2);\par
+\tab MemoryRelease(pZ3);\par
+\tab MemoryRelease(pZ3);\par
+\tab MemoryRelease(pZ4);\par
+\par
+\tab PrintAlloc();\par
+
+\pard\nowidctlpar\sa200\sl276\slmult1\}\f1\par
+\par
+\b\fs40 <9.18 \f2\lang1042\'b0\'fa\'c1\'a6\lang1033 >\par
+\lang1042\'ba\'b0 \'bf\'f2\'c1\'f7\'c0\'cc\'b1\'e2\lang1033\par
+\cf1\b0\fs19 //\cf2\par
+\cf3 #include\cf2  \cf4 "pch.h"\cf2\par
+\cf3 #include\cf2  \cf4 "Console.h"\cf2\par
+\par
+\cf3 #define\cf2  \cf5 STARS_MAX\cf2  20\par
+\cf3 #define\cf2  \cf5 CONSOLE_X\cf2  80\par
+\par
+\par
+\cf6 enum\cf2  \cf7 STAR_SPEED\cf2\par
+\{\par
+\tab\cf8 ONESTAR_SPEED\cf2  = 1,\par
+\tab\cf8 TWOSTAR_SPEED\cf2 ,\par
+\tab\cf8 THREESTAR_SPEED\cf2\par
+\};\par
+\par
+\cf6 class\cf2  \cf7 CBaseObject\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 virtual\cf2  \cf6 bool\cf2  Aciton() = 0;\par
+\tab\cf6 virtual\cf2  \cf6 void\cf2  Draw() = 0;\par
+\par
+\cf6 protected\cf2 :\par
+\tab\cf6 int\cf2  X = 0;\par
+\};\par
+\par
+\par
+\cf6 class\cf2  \cf7 COneStar\cf2  : \cf6 public\cf2  \cf7 CBaseObject\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 virtual\cf2  \cf6 bool\cf2  Aciton()\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (X <= \cf5 CONSOLE_X\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab X += \cf8 ONESTAR_SPEED\cf2 ;\par
+\tab\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\tab\}\par
+\tab\tab\cf6 return\cf2  \cf6 false\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf6 virtual\cf2  \cf6 void\cf2  Draw()\par
+\tab\{\par
+\tab\tab\cf6 for\cf2  (\cf6 int\cf2  i = 0; i < X; ++i)\par
+\tab\tab\tab printf(\cf4 " "\cf2 );\par
+\tab\tab printf(\cf4 "*"\cf2 );\par
+\tab\}\par
+\};\par
+\par
+\par
+\cf6 class\cf2  \cf7 CTwoStar\cf2  : \cf6 public\cf2  \cf7 CBaseObject\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 virtual\cf2  \cf6 bool\cf2  Aciton()\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (X <= \cf5 CONSOLE_X\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab X += \cf8 TWOSTAR_SPEED\cf2 ;\par
+\tab\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\tab\}\par
+\tab\tab\cf6 return\cf2  \cf6 false\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf6 virtual\cf2  \cf6 void\cf2  Draw()\par
+\tab\{\par
+\tab\tab\cf6 for\cf2  (\cf6 int\cf2  i = 0; i < X; ++i)\par
+\tab\tab\tab printf(\cf4 " "\cf2 );\par
+\tab\tab printf(\cf4 "**"\cf2 );\par
+\tab\}\par
+\};\par
+\par
+\par
+\cf6 class\cf2  \cf7 CThreeStar\cf2  : \cf6 public\cf2  \cf7 CBaseObject\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 virtual\cf2  \cf6 bool\cf2  Aciton()\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (X <= \cf5 CONSOLE_X\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab X += \cf8 THREESTAR_SPEED\cf2 ;\par
+\tab\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\tab\}\par
+\tab\tab\cf6 return\cf2  \cf6 false\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf6 virtual\cf2  \cf6 void\cf2  Draw()\par
+\tab\{\par
+\tab\tab\cf6 for\cf2  (\cf6 int\cf2  i = 0; i < X; ++i)\par
+\tab\tab\tab printf(\cf4 " "\cf2 );\par
+\tab\tab printf(\cf4 "***"\cf2 );\par
+\tab\}\par
+\};\par
+\par
+\par
+\cf6 int\cf2  main()\par
+\{\par
+\tab\cf7 CBaseObject\cf2 * Stars[\cf5 STARS_MAX\cf2 ] = \{ 0, \};\par
+\tab\cf6\lang1042 int\cf2  Stars_Index = 0;\par
+\tab\cf6 int\cf2  i;\par
+\par
+\par
+\tab\cf6 while\cf2  (\cf6 true\cf2 )\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (_kbhit())\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 int\cf2  Input = _getch();\par
+\tab\tab\tab Input -= 48;\par
+\par
+\tab\tab\tab\cf6 if\cf2  (Stars[Stars_Index] == \cf6 nullptr\cf2 )\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab\cf6 switch\cf2  (Input)\par
+\tab\tab\tab\tab\{\par
+\tab\tab\tab\tab\cf6 case\cf2  1:\par
+\tab\tab\tab\tab\tab Stars[Stars_Index++] = \cf6 new\cf2  \cf7 COneStar\cf2 ;\par
+\tab\tab\tab\tab\tab\cf6 break\cf2 ;\par
+\tab\tab\tab\tab\cf6 case\cf2  2:\par
+\tab\tab\tab\tab\tab Stars[Stars_Index++] = \cf6 new\cf2  \cf7 CTwoStar\cf2 ;\par
+\tab\tab\tab\tab\tab\cf6 break\cf2 ;\par
+\tab\tab\tab\tab\cf6 case\cf2  3:\par
+\tab\tab\tab\tab\tab Stars[Stars_Index++] = \cf6 new\cf2  \cf7 CThreeStar\cf2 ;\par
+\tab\tab\tab\tab\tab\cf6 break\cf2 ;\par
+\tab\tab\tab\tab\}\par
+\tab\tab\tab\}\par
+\tab\tab\}\par
+\par
+\tab\tab\cf6 if\cf2  (Stars_Index >= 20)\par
+\tab\tab\tab Stars_Index = 0;\par
+\par
+\tab\tab\cf6 for\cf2  (i = 0; i < \cf5 STARS_MAX\cf2 ; ++i)\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 if\cf2  (Stars[i] != \cf6 nullptr\cf2 )\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab\cf6 if\cf2  (Stars[i]->Aciton() == \cf6 false\cf2 )\par
+\tab\tab\tab\tab\{\par
+\tab\tab\tab\tab\tab\cf6 delete\cf2  Stars[i];\par
+\tab\tab\tab\tab\tab Stars[i] = \cf6 nullptr\cf2 ;\par
+\tab\tab\tab\tab\}\par
+\tab\tab\tab\}\par
+\tab\tab\}\par
+\tab\tab  \par
+\tab\tab system(\cf4 "cls"\cf2 );\par
+\par
+\tab\tab\cf6 for\cf2  (i = 0; i < \cf5 STARS_MAX\cf2 ; ++i)\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 if\cf2  (Stars[i] != \cf6 nullptr\cf2 )\par
+\tab\tab\tab\tab Stars[i]->Draw();\par
+\tab\tab\tab printf(\cf4 "\\n"\cf2 );\par
+\tab\tab\}\par
+\tab\tab Sleep(30);\par
+\tab\}\par
+\par
+\tab\cf6 return\cf2  0;\par
+\}\par
+\par
+\par
+\par
+\par
+\b\fs40 <9.18 \'b0\'fa\'c1\'a62>\b0\fs19\par
+\b\fs40\'b5\'f0\'b9\'f6\'b1\'eb\'c0\'cc \'b0\'a1\'b4\'c9\'c7\'d1 new/ delete\'b8\'b8\'b5\'e9\'b1\'e2\b0\f1\fs19\lang18\par
+\par
+\cf3\f3 #pragma\cf2  \cf3 once\cf2\par
+\cf3 #include\cf2  \cf4 "pch.h"\cf2\par
+\par
+\cf3 #ifndef\cf2  __CMYND_H__\par
+\cf3 #define\cf2  \cf5 __CMYND_H__\cf2\par
+\par
+\par
+\par
+\cf6 struct\cf2  \cf7 Data\cf2\par
+\{\par
+\tab\cf6 void\cf2 * Alloc_ptr;\par
+\tab\cf6 int\cf2  Alloc_size;\par
+\tab\cf6 char\cf2  FileName[128];\par
+\tab\cf6 int\cf2  Line;\par
+\tab\cf6 bool\cf2  IsOnlyOne;\par
+\};\par
+\par
+\par
+\par
+\cf6 struct\cf2  \cf7 Node\cf2\par
+\{\par
+\tab\cf7 Node\cf2 * pNext = \cf6 nullptr\cf2 ;\par
+\tab\cf7 Node\cf2 * prev = \cf6 nullptr\cf2 ;\par
+\tab\cf7 Data\cf2  data;\par
+\};\par
+\par
+\par
+\par
+\cf6 class\cf2  \cf7 CMynd\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab ~CMynd() \{\}\par
+\par
+\cf6 public\cf2 :\par
+\tab\cf6 bool\cf2  IsEmpty() \cf6 const\cf2\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (HeadNode.pNext == \cf6 nullptr\cf2 )\par
+\tab\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\tab\cf6 else\cf2\par
+\tab\tab\tab\cf6 return\cf2  \cf6 false\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf6 bool\cf2  Push(\cf6 const\cf2  \cf7 Data\cf2 & \cf3 _data\cf2 )\par
+\tab\{\par
+\tab\tab\cf1 // \f4\'bb\'f5\'b7\'ce\'bf\'ee \'b3\'eb\'b5\'e5 \'c3\'df\'b0\'a1\cf2\par
+\tab\tab\cf7 Node\cf2 * nNode = \cf6 new\cf2  \cf7 Node\cf2 ;\par
+\tab\tab nNode->data \cf9 =\cf2  \cf3 _data\cf2 ;\par
+\par
+\tab\tab\cf1 // \'b3\'eb\'b5\'e5\'b0\'a1 \'ba\'f1\'be\'ee\'c0\'d6\'b4\'d9\'b8\'e9\cf2\par
+\tab\tab\cf6 if\cf2  (IsEmpty() == \cf6 true\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab HeadNode.pNext = nNode;\par
+\tab\tab\tab nNode->prev = &HeadNode;\par
+\tab\tab\}\par
+\tab\tab\cf1 // \'b3\'eb\'b5\'e5\'b0\'a1 \'ba\'f1\'be\'ee\'c0\'d6\'c1\'f6\'be\'ca\'b4\'d9\'b8\'e9\cf2\par
+\tab\tab\cf6 else\cf2\par
+\tab\tab\{\par
+\tab\tab\tab HeadNode.pNext->prev = nNode;\par
+\tab\tab\tab nNode->pNext = HeadNode.pNext;\par
+\par
+\tab\tab\tab HeadNode.pNext = nNode;\par
+\tab\tab\tab nNode->prev = &HeadNode;\par
+\tab\tab\}\par
+\par
+\par
+\tab\tab\cf1 // Total \'c0\'ce\'b5\'a6\'bd\'ba/\'bb\'e7\'c0\'cc\'c1\'ee \'c3\'df\'b0\'a1\cf2\par
+\tab\tab ++Total_AllocIndex;\par
+\tab\tab Total_AllocSize += (nNode->data.Alloc_size);\par
+\par
+\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf6 bool\cf2  Pop(\cf7 Data\cf2 & \cf3 _data\cf2 )\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (IsEmpty() == \cf6 true\cf2 )\par
+\tab\tab\tab\cf6 return\cf2  \cf6 false\cf2 ;\par
+\par
+\tab\tab\cf1 // \'c1\'a6\'b0\'c5\'b5\'c9 \'b5\'a5\'c0\'cc\'c5\'cd\'b8\'a6 _data\'bf\'a1 \'b9\'e9\'be\'f7\cf2\par
+\tab\tab\cf7 Node\cf2 * dNode = HeadNode.pNext;\par
+\par
+\par
+\tab\tab\cf1 // \'bb\'e8\'c1\'a6\'c7\'d2 \'b3\'eb\'b5\'e5\'c0\'c7 \'be\'d5\'b5\'da\'b3\'eb\'b5\'e5 \'bf\'ac\'b0\'e1\cf2\par
+\tab\tab HeadNode.pNext->pNext->prev = &HeadNode;\par
+\tab\tab HeadNode.pNext = HeadNode.pNext->pNext;\par
+\par
+\tab\tab\cf1 // \'bb\'e8\'c1\'a6\'c7\'d2\'b3\'eb\'b5\'e5 \'b8\'ae\'bd\'ba\'c6\'ae\'bf\'a1\'bc\'ad \'c1\'a6\'b0\'c5\cf2\par
+\tab\tab\cf6 delete\cf2  dNode;\par
+\par
+\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf6 int\cf2  Total_AllocSize = 0;\par
+\tab\cf6 int\cf2  Total_AllocIndex = 0;\par
+\tab\cf7 Node\cf2  HeadNode;\par
+\};\par
+\par
+\cf7 CMynd\cf2  nd;\par
+\par
+\cf1 //size = \'b8\'de\'b8\'f0\'b8\'ae \'c7\'d2\'b4\'e7\'c5\'a9\'b1\'e2\cf2\par
+\cf6 void\cf2 * \cf6 operator new\cf2 (\cf7 size_t\cf2  \cf3 size\cf2 , \cf6 const\cf2  \cf6 char\cf2 * \cf3 File\cf2 , \cf6 const\cf2  \cf6 int\cf2  \cf3 Line\cf2 )\par
+\{\par
+\par
+\par
+\cf3 #ifdef\cf2  \cf5 _DEBUG\cf2\par
+\tab cout \cf9 <<\cf2  \cf4 "call new"\cf2  \cf9 <<\cf2  endl;\par
+\tab cout \cf9 <<\cf2  \cf4 "alloc size : "\cf2  \cf9 <<\cf2  \cf3 size\cf2  \cf9 <<\cf2  endl;\par
+\cf3 #endif\cf2\par
+\par
+\tab\cf1 // \'b8\'de\'b8\'f0\'b8\'ae\'c7\'d2\'b4\'e7\cf2\par
+\tab\cf7 size_t\cf2 * ptr = (\cf7 size_t\cf2 *)malloc(\cf3 size\cf2 );\par
+\par
+\par
+\tab\cf1 // \'b8\'ae\'bd\'ba\'c6\'ae\'bf\'a1 \'c3\'df\'b0\'a1\cf2\par
+\tab\cf7 Data\cf2  tmp;\par
+\tab tmp.Alloc_ptr = ptr;\par
+\tab tmp.Alloc_size = \cf3 size\cf2 ;\par
+\tab StringCbCopyA(tmp.FileName, \cf6 sizeof\cf2 (tmp.FileName), \cf3 File\cf2 );\par
+\tab tmp.Line = \cf3 Line\cf2 ;\par
+\par
+\tab\cf1 // []\'b8\'a6 \'bb\'e7\'bf\'eb\'c7\'cf\'c1\'f6\'be\'ca\'c0\'ba new\'c7\'d2\'b4\'e7\cf2\par
+\tab tmp.IsOnlyOne = \cf6 true\cf2 ;\par
+\par
+\tab nd.Push(tmp);\par
+\par
+\tab\cf7 size_t\cf2 * mptr = ptr - 1;\par
+\tab *mptr = 0;\par
+\par
+\tab\cf1 // \'b1\'d7\'b7\'b1\'b5\'a5 \'c0\'cc\'b7\'b8\'b0\'d4 \'c7\'d2\'b0\'e6\'bf\'ec \'b8\'b8\'be\'e0 mptr\'b0\'aa\'c0\'cc \'be\'ee\'b6\'b2 \'b5\'a5\'c0\'cc\'c5\'cd\'b8\'a6 \'c0\'fa\'c0\'e5\'c7\'cf\'b0\'ed \'c0\'d6\'b4\'c2 \'b0\'aa\'c0\'cc\'be\'fa\'b4\'d9\'b8\'e9..\cf2\par
+\tab\cf1 // \'b5\'a5\'c0\'cc\'c5\'cd\'b0\'a1 \'ba\'af\'c1\'b6\'b5\'c7\'be\'ee new/delete\'b0\'cb\'c1\'f5\'b5\'b5 \'b8\'f8\'c7\'cf\'b0\'d4 \'b5\'c7\'b4\'c2\'b0\'cd\'c0\'cc \'be\'c6\'b4\'d1\'b0\'a1?\cf2\par
+\par
+\tab\cf6 return\cf2  ptr;\par
+\}\par
+\par
+\par
+\cf6 void\cf2 * \cf6 operator new[]\cf2 (\cf7 size_t\cf2  \cf3 size\cf2 , \cf6 const\cf2  \cf6 char\cf2 * \cf3 File\cf2 , \cf6 const\cf2  \cf6 int\cf2  \cf3 Line\cf2 )\par
+\{\par
+\par
+\cf3 #ifdef\cf2  \cf5 _DEBUG\cf2\par
+\tab cout \cf9 <<\cf2  \cf4 "call new[]"\cf2  \cf9 <<\cf2  endl;\par
+\tab cout \cf9 <<\cf2  \cf4 "alloc size : "\cf2  \cf9 <<\cf2  \cf3 size\cf2  \cf9 <<\cf2  endl;\par
+\cf3 #endif\cf2\par
+\par
+\tab\cf1 // \'b8\'de\'b8\'f0\'b8\'ae\'c7\'d2\'b4\'e7\cf2\par
+\tab\cf7 size_t\cf2 * ptr = (\cf7 size_t\cf2 *)malloc(\cf3 size\cf2 );\par
+\par
+\tab\cf1 // \'b8\'ae\'bd\'ba\'c6\'ae\'bf\'a1 \'c3\'df\'b0\'a1\cf2\par
+\tab\cf7 Data\cf2  tmp;\par
+\tab tmp.Alloc_ptr = ptr;\par
+\tab tmp.Alloc_size = \cf3 size\cf2 ;\par
+\tab StringCbCopyA(tmp.FileName, \cf6 sizeof\cf2 (tmp.FileName), \cf3 File\cf2 );\par
+\tab tmp.Line = \cf3 Line\cf2 ;\par
+\par
+\tab\cf1 // []\'b8\'a6\'bb\'e7\'bf\'eb\'c7\'d1 new[]\'c7\'d2\'b4\'e7\cf2\par
+\tab tmp.IsOnlyOne = \cf6 false\cf2 ;\par
+\par
+\tab nd.Push(tmp);\par
+\tab\cf6 return\cf2  ptr;\par
+\}\par
+\par
+\par
+\cf6 void\cf2  \cf6 operator delete\cf2 (\cf6 void\cf2 * \cf3 p\cf2 , \cf7 size_t\cf2  \cf3 size\cf2 )\par
+\{\par
+\par
+\cf3 #ifdef\cf2  \cf5 _DEBUG\cf2\par
+\tab cout \cf9 <<\cf2  \cf4 "call delete"\cf2  \cf9 <<\cf2  endl;\par
+\cf3 #endif\cf2\par
+\tab\cf1 // \'b8\'b8\'be\'e0 \'c7\'d2\'b4\'e7\'b5\'c8 \'b8\'de\'b8\'f0\'b8\'ae\'b0\'a1 \'be\'c6\'b9\'ab\'b0\'cd\'b5\'b5 \'be\'f8\'b4\'d9\'b8\'e9\cf2\par
+\tab\cf6 if\cf2  (nd.IsEmpty())\par
+\tab\{\par
+\tab\tab cout \cf9 <<\cf2  \cf4 "No Alloc"\cf2  \cf9 <<\cf2  endl;\par
+\tab\tab\cf1 //ERROR\cf2\par
+\tab\tab\cf6 return\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf7 Node\cf2 * sNode = nd.HeadNode.pNext;\par
+\par
+\tab\cf1 // \'b8\'ae\'bd\'ba\'c6\'ae\'b8\'a6 \'b5\'b9\'b8\'e9\'bc\'ad \'c7\'d2\'b4\'e7\'c7\'d1 \'b8\'de\'b8\'f0\'b8\'ae\'b8\'a6 \'c3\'a3\'b4\'c2\'b4\'d9.\cf2\par
+\tab\cf6 while\cf2  (\cf3 p\cf2  != sNode->data.Alloc_ptr)\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (sNode->pNext == \cf6 nullptr\cf2 )\par
+\tab\tab\tab\cf6 break\cf2 ;\par
+\par
+\tab\tab sNode = sNode->pNext;\par
+\tab\}\par
+\par
+\tab\cf1 // \'b8\'ae\'bd\'ba\'c6\'ae\'bf\'a1\'bc\'ad \'c3\'a3\'c1\'f6\'b8\'f8\'c7\'df\'b4\'d9\'b8\'e9, new[]\'b7\'ce \'c7\'d2\'b4\'e7\'c7\'d1 \'b8\'de\'b8\'f0\'b8\'ae\'c0\'ce\'c1\'f6 \'b0\'cb\'bb\'e7\'c7\'d1\'b4\'d9.\cf2\par
+\par
+\tab sNode = nd.HeadNode.pNext;\par
+\tab\cf6 while\cf2  (\cf3 p\cf2  != ((\cf7 size_t\cf2 *)sNode->data.Alloc_ptr + 1))\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (sNode->pNext == \cf6 nullptr\cf2 )\par
+\tab\tab\tab\cf6 break\cf2 ;\par
+\par
+\tab\tab sNode = sNode->pNext;\par
+\tab\}\par
+\par
+\tab\cf6 if\cf2  (\cf3 p\cf2  == ((\cf7 size_t\cf2 *)sNode->data.Alloc_ptr + 1))\par
+\tab\{\par
+\tab\tab cout \cf9 <<\cf2  \cf4 "ERROR : "\cf2  \cf9 <<\cf2  \cf4 "new[] \'c7\'d2\'b4\'e7 \'c8\'c4 delete \'c7\'d8\'c1\'a6"\cf2  \cf9 <<\cf2  endl;\par
+\tab\tab\cf6 return\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf1 // \'b8\'ae\'bd\'ba\'c6\'ae\'b8\'a6 \'b8\'f8\'c3\'a3\'be\'d2\'b4\'d9\'b8\'e9 \'b8\'ae\'c5\'cf\'c7\'d1\'b4\'d9.\cf2\par
+\tab\cf6 if\cf2  (sNode->pNext == \cf6 nullptr\cf2  \par
+\tab\tab && (\cf3 p\cf2  != sNode->data.Alloc_ptr) && (\cf3 p\cf2  != (\cf7 size_t\cf2 *)sNode->data.Alloc_ptr + 1))\par
+\tab\{\par
+\tab\tab cout \cf9 <<\cf2  \cf4 "\'c7\'d2\'b4\'e7\'c7\'d1\'c0\'fb \'be\'f8\'b4\'c2 \'b8\'de\'b8\'f0\'b8\'ae\'c0\'d4\'b4\'cf\'b4\'d9"\cf2  \cf9 <<\cf2  endl;\par
+\tab\tab\cf6 return\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf1 // \'bb\'e8\'c1\'a6\'c7\'d2 \'b3\'eb\'b5\'e5\'b0\'a1 \'c7\'cf\'b3\'aa\'bb\'d3\'c0\'ce\'b0\'d4 \'be\'c6\'b4\'cf\'b6\'f3\'b8\'e9\cf2\par
+\tab\cf6 if\cf2  (sNode->pNext != \cf6 nullptr\cf2 )\par
+\tab\{\par
+\tab\tab\cf1 // \'b3\'eb\'b5\'e5\'b8\'a6 \'bb\'e8\'c1\'a6\'c7\'cf\'b0\'ed \'b3\'aa\'b8\'d3\'c1\'f6\'b8\'a6 \'bf\'ac\'b0\'e1\cf2\par
+\tab\tab sNode->prev->pNext = sNode->pNext;\par
+\tab\tab sNode->pNext->prev = sNode->prev;\par
+\tab\}\par
+\par
+\tab free(sNode);\par
+\}\par
+\par
+\cf6 void\cf2  \cf6 operator delete[]\cf2 (\cf6 void\cf2 * \cf3 p\cf2 , \cf7 size_t\cf2  \cf3 size\cf2 )\par
+\{\par
+\cf3 #ifdef\cf2  \cf5 _DEBUG\cf2\par
+\tab cout \cf9 <<\cf2  \cf4 "call delete[]"\cf2  \cf9 <<\cf2  endl;\par
+\cf3 #endif\cf2\par
+\tab\cf1 // \'b8\'b8\'be\'e0 \'c7\'d2\'b4\'e7\'b5\'c8 \'b8\'de\'b8\'f0\'b8\'ae\'b0\'a1 \'be\'c6\'b9\'ab\'b0\'cd\'b5\'b5 \'be\'f8\'b4\'d9\'b8\'e9\cf2\par
+\tab\cf6 if\cf2  (nd.IsEmpty())\par
+\tab\{\par
+\tab\tab cout \cf9 <<\cf2  \cf4 "No Alloc"\cf2  \cf9 <<\cf2  endl;\par
+\tab\tab\cf1 //ERROR\cf2\par
+\tab\tab\cf6 return\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf7 Node\cf2 * sNode = nd.HeadNode.pNext;\par
+\par
+\tab\cf1 // \'b8\'ae\'bd\'ba\'c6\'ae\'b8\'a6 \'b5\'b9\'b8\'e9\'bc\'ad \'c7\'d2\'b4\'e7\'c7\'d1 \'b8\'de\'b8\'f0\'b8\'ae\'b8\'a6 \'c3\'a3\'b4\'c2\'b4\'d9.\cf2\par
+\tab\cf6 while\cf2  (\cf3 p\cf2  != sNode->data.Alloc_ptr)\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (sNode->pNext == \cf6 nullptr\cf2 )\par
+\tab\tab\tab\cf6 break\cf2 ;\par
+\par
+\tab\tab sNode = sNode->pNext;\par
+\tab\}\par
+\par
+\tab sNode = nd.HeadNode.pNext;\par
+\tab\cf6 while\cf2  (\cf3 p\cf2  != ((\cf7 size_t\cf2 *)sNode->data.Alloc_ptr - 1))\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (sNode->pNext == \cf6 nullptr\cf2 )\par
+\tab\tab\tab\cf6 break\cf2 ;\par
+\par
+\tab\tab sNode = sNode->pNext;\par
+\tab\}\par
+\par
+\tab\cf1 // \'b8\'b8\'be\'e0 new - delete[] \'c7\'fc\'c5\'c2\'b6\'f3\'b8\'e9 \'c7\'d2\'b4\'e7\'b5\'c8 \'b0\'f7\'ba\'b8\'b4\'d9  -1 (size_t)\'b8\'b8\'c5\'ad \'be\'d5\'bf\'a1\'c0\'d6\'c0\'bb\'b0\'cd\cf2\par
+\tab\cf6 if\cf2  (\cf3 p\cf2  == ((\cf7 size_t\cf2 *)sNode->data.Alloc_ptr) - 1)\par
+\tab\{\par
+\tab\tab cout \cf9 <<\cf2  \cf4 "ERROR : "\cf2  \cf9 <<\cf2  \cf4 "new\'c7\'d2\'b4\'e7 \'c8\'c4 delete[]\'c7\'d8\'c1\'a6"\cf2  \cf9 <<\cf2  endl;\par
+\tab\tab\cf6 return\cf2 ;\par
+\tab\}\par
+\par
+\par
+\tab\cf1 // \'b8\'ae\'bd\'ba\'c6\'ae\'b8\'a6 \'b8\'f8\'c3\'a3\'be\'d2\'b4\'d9\'b8\'e9 break;\cf2\par
+\tab\cf6 if\cf2  (sNode->pNext == \cf6 nullptr\cf2\par
+\tab\tab\tab && (\cf3 p\cf2  != sNode->data.Alloc_ptr) && (\cf3 p\cf2  != (\cf7 size_t\cf2 *)sNode->data.Alloc_ptr - 4))\par
+\tab\{\par
+\tab\tab cout \cf9 <<\cf2  \cf4 "\'c7\'d2\'b4\'e7\'c7\'d1\'c0\'fb \'be\'f8\'b4\'c2 \'b8\'de\'b8\'f0\'b8\'ae\'c0\'d4\'b4\'cf\'b4\'d9"\cf2  \cf9 <<\cf2  endl;\par
+\tab\tab\cf6 return\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf1 // \'bb\'e8\'c1\'a6\'c7\'d2 \'b3\'eb\'b5\'e5\'b0\'a1 \'c7\'cf\'b3\'aa\'bb\'d3\'c0\'ce\'b0\'d4 \'be\'c6\'b4\'cf\'b6\'f3\'b8\'e9\cf2\par
+\tab\cf6 if\cf2  (sNode->pNext != \cf6 nullptr\cf2 )\par
+\tab\{\par
+\tab\tab\cf1 // \'b3\'eb\'b5\'e5\'b8\'a6 \'bb\'e8\'c1\'a6\'c7\'cf\'b0\'ed \'b3\'aa\'b8\'d3\'c1\'f6\'b8\'a6 \'bf\'ac\'b0\'e1\cf2\par
+\tab\tab sNode->prev->pNext = sNode->pNext;\par
+\tab\tab sNode->pNext->prev = sNode->prev;\par
+\tab\}\par
+\tab free(sNode);\par
+\}\par
+\par
+\par
+\cf3 #endif\cf2  \cf1 // !__CMYNDE_H__\cf2\par
+\par
+\par
+\par
+\b\f2\fs40\lang1042 <9.24 \'b0\'fa\'c1\'a62>\par
+itertator\'c6\'d0\'c5\'cf List\'b8\'b8\'b5\'e9\'b1\'e2\b0\fs19\par
+\cf3\f3\lang18 #pragma\cf2  \cf3 once\cf2\par
+\par
+\cf3 #ifndef\cf2  __CMYLIST_H__\par
+\cf3 #define\cf2  \cf5 __CMYLIST_H__\cf2\par
+\par
+\cf6 template\cf2 <\cf6 typename\cf2  \cf7 T\cf2 >\par
+\cf6 class\cf2  \cf7 CMyList\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 struct\cf2  \cf7 Node\cf2\par
+\tab\{\par
+\tab\tab\cf7 T\cf2  data;\par
+\tab\tab\cf7 Node\cf2 * prev = \cf6 nullptr\cf2 ;\par
+\tab\tab\cf7 Node\cf2 * next = \cf6 nullptr\cf2 ;\par
+\tab\};\par
+\par
+\tab\cf6 class\cf2  \cf7 Myiterator\cf2\par
+\tab\{\par
+\tab\tab\cf6 friend\cf2  \cf7 CMyList\cf2 ;\par
+\par
+\tab\cf6 public\cf2 :\par
+\tab\tab Myiterator()\{\}\par
+\tab\tab Myiterator(\cf7 Node\cf2 * \cf3 _Node\cf2 ) : cNode(\cf3 _Node\cf2 ) \{\};\par
+\par
+\tab\tab\cf6 const\cf2  \cf7 Myiterator\cf2 & \cf9 operator ++\cf2 (\cf6 int\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab\cf7 Node\cf2 * tNode = cNode;\par
+\tab\tab\tab\cf6 this\cf2 ->cNode = \cf6 this\cf2 ->cNode->next;\par
+\tab\tab\tab\cf6 return\cf2  tNode;\par
+\tab\tab\}\par
+\tab\tab\par
+\tab\tab\cf7 Myiterator\cf2  \cf9 operator++\cf2 ()\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 this\cf2 ->cNode = \cf6 this\cf2 ->cNode->next;\par
+\tab\tab\tab\cf6 return\cf2  cNode;\par
+\tab\tab\}\par
+\par
+\tab\tab\cf7 T\cf2 & \cf9 operator*\cf2 ()\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 return\cf2  \cf6 this\cf2 ->cNode->data;\par
+\tab\tab\}\par
+\tab\tab\par
+\tab\tab\cf6 bool\cf2  \cf9 operator==\cf2  (\cf6 const\cf2  \cf7 Myiterator\cf2 & \cf3 rhs\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 if\cf2  (\cf6 this\cf2 ->cNode == \cf3 rhs\cf2 .cNode)\par
+\tab\tab\tab\tab\cf6 return\cf2  \cf6 true\cf2 ;\par
+\tab\tab\tab\cf6 else\cf2\par
+\tab\tab\tab\tab\cf6 return\cf2  \cf6 false\cf2 ;\par
+\tab\tab\}\par
+\par
+\tab\tab\cf6 bool\cf2  \cf9 operator!=\cf2  (\cf6 const\cf2  \cf7 Myiterator\cf2 & \cf3 rhs\cf2 )\par
+\tab\tab\{ \par
+\tab\tab\tab\cf6 return\cf2  !(*\cf6 this\cf2  == \cf3 rhs\cf2 );\par
+\tab\tab\}\par
+\par
+\tab\tab\cf6 private\cf2 :\par
+\tab\tab\tab\cf7 Node\cf2 * cNode = \cf6 nullptr\cf2 ;\par
+\tab\};\par
+\par
+\cf6 public\cf2 :\par
+\tab CMyList() \{\};\par
+\tab ~CMyList() \par
+\tab\{\par
+\tab\tab clear();\par
+\tab\};\par
+\par
+\tab\cf7 Myiterator\cf2  begin()\par
+\tab\{\par
+\tab\tab\cf7 Myiterator\cf2  iter(headNode);\par
+\tab\tab\cf6 return\cf2  iter;\par
+\tab\}\par
+\par
+\tab\cf7 Myiterator\cf2  end()\par
+\tab\{\par
+\tab\tab\cf7 Myiterator\cf2  iter(tailNode);\par
+\tab\tab\par
+\tab\tab\cf1 //Node* tNode = new Node;\cf2\par
+\tab\tab\cf1 //tNode->data = NULL;\cf2\par
+\par
+\par
+\tab\tab\cf6 return\cf2  iter;\par
+\tab\}\par
+\par
+\par
+\par
+\cf6 public\cf2 :\par
+\tab\cf6 bool\cf2  Empty()\par
+\tab\{\par
+\tab\tab\cf6 return\cf2  headNode == \cf6 nullptr\cf2 ;\par
+\tab\}\par
+\par
+\tab\cf1 // \f4\'bb\'f5\'b3\'eb\'b5\'e5\'b8\'a6 front\'bf\'a1 \'bb\'f0\'c0\'d4\cf2\par
+\tab\cf6 void\cf2  push_front(\cf7 T\cf2  \cf3 data\cf2 )\par
+\tab\{\par
+\tab\tab\cf7 Node\cf2 * nNode = \cf6 new\cf2  \cf7 Node\cf2 ;\par
+\tab\tab nNode->data = \cf3 data\cf2 ;\par
+\par
+\tab\tab\cf6 if\cf2  (Empty())\par
+\tab\tab\{\par
+\tab\tab\tab headNode = nNode;\par
+\tab\tab\tab tailNode = nNode;\par
+\tab\tab\tab ++m_size;\par
+\tab\tab\tab\cf6 return\cf2 ;\par
+\tab\tab\}\tab\par
+\par
+\tab\tab nNode->next = headNode;\par
+\tab\tab headNode->prev = nNode;\par
+\tab\tab headNode = nNode;\par
+\tab\tab ++m_size;\par
+\tab\};\par
+\par
+\tab\cf1 // \'bb\'f5\'b3\'eb\'b5\'e5\'b8\'a6 back\'bf\'a1 \'bb\'f0\'c0\'d4\cf2\par
+\tab\cf6 void\cf2  push_back(\cf7 T\cf2  \cf3 data\cf2 ) \par
+\tab\{\par
+\tab\tab\cf7 Node\cf2 * nNode = \cf6 new\cf2  \cf7 Node\cf2 ;\par
+\tab\tab nNode->data = \cf3 data\cf2 ;\par
+\par
+\tab\tab\cf6 if\cf2  (Empty())\par
+\tab\tab\{\par
+\tab\tab\tab headNode = nNode;\par
+\tab\tab\tab tailNode = nNode;\par
+\tab\tab\tab\par
+\tab\tab\tab ++m_size;\par
+\tab\tab\tab\cf6 return\cf2 ;\par
+\tab\tab\}\par
+\par
+\tab\tab tailNode->next = nNode;\par
+\tab\tab nNode->prev = tailNode;\par
+\tab\tab tailNode = nNode;\par
+\tab\tab ++m_size;\par
+\tab\};\par
+\par
+\tab\cf7 Myiterator\cf2  erase(\cf7 Myiterator\cf2 & \cf3 rhs\cf2 )\par
+\tab\{\par
+\tab\tab\cf7 Myiterator\cf2  iter = \cf3 rhs\cf2 ;\par
+\tab\tab ++iter;\par
+\tab\tab\par
+\par
+\tab\tab\cf7 Node\cf2 * dNode = \cf3 rhs\cf2 .cNode;\par
+\par
+\tab\tab\cf6 if\cf2 (dNode != \cf6 this\cf2 ->headNode)\par
+\tab\tab\tab dNode->prev->next = dNode->next;\par
+\par
+\tab\tab\cf6 if\cf2 (dNode != \cf6 this\cf2 ->tailNode)\par
+\tab\tab\tab dNode->next->prev = dNode->prev;\par
+\tab\tab\par
+\tab\tab\cf6 delete\cf2  dNode;\par
+\tab\tab\cf6 return\cf2  iter;\par
+\tab\}\par
+\par
+\tab\cf1 // \'b3\'eb\'b5\'e5\'b8\'a6 \'b8\'f0\'b5\'ce \'c1\'a6\'b0\'c5\cf2\par
+\tab\cf6 void\cf2  clear() \par
+\tab\{\par
+\tab\tab\cf7 Node\cf2 * pNode = headNode;\par
+\tab\tab\cf7 Node\cf2 * dNode;\par
+\tab\tab\par
+\tab\tab\cf6 while\cf2  (pNode != \cf6 nullptr\cf2 )\par
+\tab\tab\{\par
+\tab\tab\tab dNode = pNode;\par
+\tab\tab\tab pNode = pNode->next;\par
+\par
+\tab\tab\tab\cf6 delete\cf2  dNode;\par
+\tab\tab\}\par
+\tab\tab headNode = \cf6 nullptr\cf2 ;\par
+\tab\tab tailNode = \cf6 nullptr\cf2 ;\par
+\tab\};\par
+\tab\cf6 int\cf2  size() \{ \cf6 return\cf2  m_size; \}\par
+\par
+\cf6 private\cf2 :\par
+\tab\cf6 int\cf2  m_size = 0;\par
+\tab\cf7 Node\cf2 * headNode = \cf6 nullptr\cf2 ;\par
+\tab\cf7 Node\cf2 * tailNode = \cf6 nullptr\cf2 ;\par
+\};\par
+\par
+\par
+\cf3 #endif\par
+\par
+\par
+\par
+\par
+\par
+\par
+\cf1\f3 // Assignement.cpp : \f4\'c0\'cc \'c6\'c4\'c0\'cf\'bf\'a1\'b4\'c2 'main' \'c7\'d4\'bc\'f6\'b0\'a1 \'c6\'f7\'c7\'d4\'b5\'cb\'b4\'cf\'b4\'d9. \'b0\'c5\'b1\'e2\'bc\'ad \'c7\'c1\'b7\'ce\'b1\'d7\'b7\'a5 \'bd\'c7\'c7\'e0\'c0\'cc \'bd\'c3\'c0\'db\'b5\'c7\'b0\'ed \'c1\'be\'b7\'e1\'b5\'cb\'b4\'cf\'b4\'d9.\cf2\par
+\cf1 //\cf2\par
+\par
+\cf3 #include\cf2  \cf4 "pch.h"\cf2\par
+\cf1 //#define new new(__FILE__,__LINE__)\cf2\par
+\cf3 #include\cf2  \cf4 <list>\cf2\par
+\cf3 #include\cf2  \cf4 "CMyList.h"\cf2\par
+\par
+\cf6 class\cf2  \cf7 CPlayer\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 explicit\cf2  CPlayer(\cf6 int\cf2  \cf3 _cd\cf2 ) : cd(\cf3 _cd\cf2 ) \{\};\par
+\par
+\tab\cf6 int\cf2  GetID()\par
+\tab\{\par
+\tab\tab\cf6 return\cf2  cd;\par
+\tab\}\par
+\par
+\cf6 private\cf2 :\par
+\tab\cf6 int\cf2  cd;\par
+\};\par
+\par
+\par
+\cf6 int\cf2  main()\par
+\{\par
+\tab\cf7 CMyList\cf2 <\cf7 CPlayer\cf2 *> ListPlayer;\par
+\par
+\tab ListPlayer.push_front(\cf6 new\cf2  \cf7 CPlayer\cf2 (1));\par
+\tab ListPlayer.push_front(\cf6 new\cf2  \cf7 CPlayer\cf2 (2));\par
+\tab ListPlayer.push_front(\cf6 new\cf2  \cf7 CPlayer\cf2 (3));\par
+\tab ListPlayer.push_front(\cf6 new\cf2  \cf7 CPlayer\cf2 (4));\par
+\tab ListPlayer.push_front(\cf6 new\cf2  \cf7 CPlayer\cf2 (5));\par
+\tab ListPlayer.push_front(\cf6 new\cf2  \cf7 CPlayer\cf2 (6));\par
+\par
+\par
+\tab\cf7 CMyList\cf2 <\cf7 CPlayer\cf2 *>::\cf7 Myiterator\cf2  iter;\par
+\par
+\tab\cf6 for\cf2  (iter \cf9 =\cf2  ListPlayer.begin(); iter \cf9 !=\cf2  ListPlayer.end();)\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  ((\cf9 *\cf2 iter)->GetID() == 5)\par
+\tab\tab\{\par
+\tab\tab\tab\cf6 delete\cf9 *\cf2  iter;\par
+\tab\tab\tab\cf1 //break;\cf2\par
+\tab\tab\tab iter \cf9 =\cf2  ListPlayer.erase(iter);\par
+\tab\tab\}\par
+\tab\tab\cf6 else\cf2\par
+\tab\tab\{\par
+\tab\tab\tab\cf9 ++\cf2 iter;\par
+\tab\tab\}\par
+\tab\}\par
+\par
+\tab ListPlayer.clear();\par
+\}\par
+\cf3\par
+\par
+\cf0\b\fs40 <9.27\lang1042\'b0\'fa\'c1\'a6\lang18 >\cf3\b0\fs19\par
+\cf0\b\f0\fs40\lang1042\'c7\'c1\'b7\'ce\'c6\'c4\'c0\'cf\'b7\'af \'b8\'b8\'b5\'e9\'b1\'e2\b0\fs20\lang18\par
+\b\fs40\lang1042 profile.h\b0\fs20\lang18\par
+\cf3\f3\fs19 #pragma\cf2  \cf3 once\cf2\par
+\par
+\par
+\cf3 #ifndef\cf2  __MYLIST_H__\par
+\cf3 #define\cf2  \cf5 __MYLIST_H__\cf2\par
+\par
+\cf3 #include\cf2  \cf4 <windows.h>\cf2\par
+\cf3 #include\cf2  \cf4 <strsafe.h>\cf2\par
+\par
+\cf6 typedef\cf2  \cf6 struct\cf2\par
+\{\par
+\tab\cf6 char\cf2  szName[64]; \cf1 // \f4\'c7\'c1\'b7\'ce\'c6\'c4\'c0\'cf \'bb\'f9\'c7\'c3 \'c0\'cc\'b8\'a7.\cf2\par
+\tab\cf1 //LARGE_INTEGER StartTime; // \'c7\'c1\'b7\'ce\'c6\'c4\'c0\'cf \'bb\'f9\'c7\'c3 \'bd\'c7\'c7\'e0 \'bd\'c3\'b0\'a3.\cf2\par
+\par
+\tab\cf6 __int64\cf2  TotalTime = 0; \cf1 // \'c0\'fc\'c3\'bc \'bb\'e7\'bf\'eb\'bd\'c3\'b0\'a3 \'c4\'ab\'bf\'ee\'c5\'cd Time. (\'c3\'e2\'b7\'c2\'bd\'c3 \'c8\'a3\'c3\'e2\'c8\'b8\'bc\'f6\'b7\'ce \'b3\'aa\'b4\'a9\'be\'ee \'c6\'f2\'b1\'d5 \'b1\'b8\'c7\'d4)\cf2\par
+\tab\cf6 __int64\cf2  Min[2] = \{ 100000, 100000 \}; \cf1 // \'c3\'d6\'bc\'d2 \'bb\'e7\'bf\'eb\'bd\'c3\'b0\'a3 \'c4\'ab\'bf\'ee\'c5\'cd Time. (\'c3\'ca\'b4\'dc\'c0\'a7\'b7\'ce \'b0\'e8\'bb\'ea\'c7\'cf\'bf\'a9 \'c0\'fa\'c0\'e5 / [0] \'b0\'a1\'c0\'e5\'c3\'d6\'bc\'d2 [1] \'b4\'d9\'c0\'bd \'c3\'d6\'bc\'d2 [2])\cf2\par
+\tab\cf6 __int64\cf2  Max[2] = \{ 0, \}; \cf1 // \'c3\'d6\'b4\'eb \'bb\'e7\'bf\'eb\'bd\'c3\'b0\'a3 \'c4\'ab\'bf\'ee\'c5\'cd Time. (\'c3\'ca\'b4\'dc\'c0\'a7\'b7\'ce \'b0\'e8\'bb\'ea\'c7\'cf\'bf\'a9 \'c0\'fa\'c0\'e5 / [0] \'b0\'a1\'c0\'e5\'c3\'d6\'b4\'eb [1] \'b4\'d9\'c0\'bd \'c3\'d6\'b4\'eb [2])\cf2\par
+\par
+\tab\cf6 unsigned\cf2  \cf6 __int64\cf2  Call = 0; \cf1 // \'b4\'a9\'c0\'fb \'c8\'a3\'c3\'e2 \'c8\'bd\'bc\'f6.\cf2\par
+\par
+\} \cf7 PROFILE_SAMPLE\cf2 ;\par
+\par
+\par
+\cf6 typedef\cf2  \cf7 PROFILE_SAMPLE\cf2  \cf7 LData\cf2 ;\par
+\par
+\par
+\cf6 struct\cf2  \cf7 Node\cf2\par
+\{\par
+\tab\cf7 LData\cf2  data;\par
+\tab\cf7 Node\cf2 * pNext = \cf6 nullptr\cf2 ;\par
+\tab\cf7 Node\cf2 * pPrev = \cf6 nullptr\cf2 ;\par
+\};\par
+\par
+\par
+\par
+\cf6 class\cf2  \cf7 CMyList\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 explicit\cf2  CMyList();\par
+\tab\cf6 virtual\cf2  ~CMyList();\par
+\par
+\cf6 private\cf2 :\par
+\tab\cf6 void\cf2  Initalize();\par
+\tab\cf6 void\cf2  Release();\par
+\par
+\cf6 public\cf2 :\par
+\tab\cf6 bool\cf2  IsEmpty() \cf6 const\cf2 ;\par
+\tab\cf6 void\cf2  push_front(\cf6 const\cf2  \cf7 LData\cf2 & \cf3 data\cf2 );\par
+\tab\cf6 void\cf2  push_back(\cf6 const\cf2  \cf7 LData\cf2 & \cf3 data\cf2 );\par
+\tab\cf7 Node\cf2 * Search_Node(\cf6 const\cf2  \cf6 char\cf2 * \cf3 str\cf2 );\par
+\tab\cf6 int\cf2  size() \cf6 const\cf2 ;\par
+\tab\cf6 void\cf2  clear();\par
+\par
+\cf6 private\cf2 :\par
+\tab\cf7 Node\cf2 * headNode = \cf6 nullptr\cf2 ;\par
+\tab\cf7 Node\cf2 * tailNode = \cf6 nullptr\cf2 ;\par
+\tab\cf6 int\cf2  m_size = 0;\par
+\};\par
+\par
+\par
+\par
+\cf6 class\cf2  \cf7 CProfile\cf2\par
+\{\par
+\cf6 public\cf2 :\par
+\tab\cf6 explicit\cf2  CProfile();\par
+\tab\cf6 virtual\cf2  ~CProfile();\par
+\cf6 public\cf2 :\par
+\tab\cf6 void\cf2  Initailize();\par
+\par
+\cf6 public\cf2 :\par
+\tab\cf6 void\cf2  ProfileBegin(\cf6 const\cf2  \cf6 char\cf2 * \cf3 TagName\cf2 );\par
+\tab\cf6 void\cf2  ProfileEnd(\cf6 const\cf2  \cf6 char\cf2 * \cf3 TagName\cf2 );\par
+\tab\cf6 void\cf2  ProfileDataOutText(\cf6 const\cf2  \cf6 char\cf2 * \cf3 FileName\cf2 );\par
+\tab\cf6 void\cf2  ProfileReset(\cf6 void\cf2 );\par
+\par
+\cf6 private\cf2 :\par
+\tab\cf7 LARGE_INTEGER\cf2  Freq;\par
+\tab\cf7 LARGE_INTEGER\cf2  Start;\par
+\tab\cf7 LARGE_INTEGER\cf2  End;\par
+\tab\cf7 CMyList\cf2  MyList;\par
+\};\par
+\par
+\par
+\par
+\cf3 #endif\cf2  \cf1 // __MYLIST_H__\cf2\par
+\par
+\par
+\par
+\par
+\par
+\par
+\cf1 /*==================================================\cf2\par
+\par
+\cf1\tab [ \'c7\'c1\'b7\'ce\'c6\'c4\'c0\'cf\'b8\'b5 \'bb\'e7\'bf\'eb\'bd\'c3 \'c1\'a4\'c0\'c7 ]\cf2\par
+\par
+\cf1\tab CProfile profile;\cf2\par
+\par
+\cf1\tab #define PROFILEING\cf2\par
+\cf1\tab #ifdef PROFILEING\cf2\par
+\cf1\tab #define PRO_BEGIN(TagName) ProfileBegin(TagName)\cf2\par
+\cf1\tab #define PRO_END(TagName) ProfileEnd(TagName)\cf2\par
+\cf1\tab #else\cf2\par
+\cf1\tab #define PRO_BEGIN\cf2\par
+\cf1\tab #define PRO_END\cf2\par
+\cf1\tab #endif // PROFILEINT\cf2\par
+\par
+\cf1 ==================================================*/\cf2\par
+\par
+\cf0\b\f0\fs40 profile.cpp\b0\fs20\par
+\cf3\f3\fs19 #include\cf2  \cf4 "pch.h"\cf2\par
+\cf3 #include\cf2  \cf4 "Profile.h"\cf2\par
+\par
+\cf7 CMyList\cf2 ::CMyList()\par
+\{\par
+\tab Initalize();\par
+\}\par
+\par
+\cf7 CMyList\cf2 ::~CMyList()\par
+\{\par
+\tab Release();\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CMyList\cf2 ::Initalize()\par
+\{\par
+\tab headNode = \cf6 new\cf2  \cf7 Node\cf2 ;\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CMyList\cf2 ::Release()\par
+\{\par
+\tab\cf6 delete\cf2  headNode;\par
+\}\par
+\par
+\cf6 bool\cf2  \cf7 CMyList\cf2 ::IsEmpty() \cf6 const\cf2\par
+\{\par
+\tab\cf6 return\cf2  headNode->pNext == \cf6 nullptr\cf2 ;\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CMyList\cf2 ::push_front(\cf6 const\cf2  \cf7 LData\cf2 & \cf3 data\cf2 )\par
+\{\par
+\tab\cf7 Node\cf2 * nNode = \cf6 new\cf2  \cf7 Node\cf2 ;\par
+\tab nNode->data \cf9 =\cf2  \cf3 data\cf2 ;\par
+\par
+\tab\cf6 if\cf2  (IsEmpty() == \cf6 true\cf2 )\par
+\tab\{\par
+\tab\tab nNode->pNext = headNode->pNext;\par
+\tab\tab headNode->pNext = nNode;\par
+\tab\tab headNode->pNext->pPrev = headNode;\par
+\tab\tab tailNode = nNode;\par
+\tab\}\par
+\tab\cf6 else\cf2\par
+\tab\{\par
+\tab\tab nNode->pNext = headNode->pNext;\par
+\tab\tab headNode->pNext->pPrev = nNode;\par
+\tab\tab headNode->pNext = nNode;\par
+\tab\}\par
+\par
+\tab ++m_size;\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CMyList\cf2 ::push_back(\cf6 const\cf2  \cf7 LData\cf2 & \cf3 data\cf2 )\par
+\{\par
+\tab\cf7 Node\cf2 * nNode = \cf6 new\cf2  \cf7 Node\cf2 ;\par
+\tab nNode->data \cf9 =\cf2  \cf3 data\cf2 ;\par
+\par
+\tab\cf6 if\cf2  (IsEmpty() == \cf6 true\cf2 )\par
+\tab\tab push_front(\cf3 data\cf2 );\par
+\tab\cf6 else\cf2\par
+\tab\{\par
+\tab\tab tailNode->pNext = nNode;\par
+\tab\tab nNode->pPrev = tailNode;\par
+\tab\tab tailNode = nNode;\par
+\tab\}\par
+\par
+\tab ++m_size;\par
+\}\par
+\par
+\cf1 //List\f4\'bf\'a1\'bc\'ad const char*\'b8\'a6 \'b9\'de\'be\'c6\'bc\'ad \'c3\'a3\'b4\'c2\'b0\'cd\'c0\'cc \'c0\'cc\'bb\'f3\'c7\'d4.\cf2\par
+\cf1 //Node\'b3\'aa Data\'b8\'a6 \'b9\'de\'c0\'bb\'b0\'cd\cf2\par
+\par
+\cf7 Node\cf2 * \cf7 CMyList\cf2 ::Search_Node(\cf6 const\cf2  \cf6 char\cf2 * \cf3 str\cf2 )\par
+\{\par
+\tab\cf7 Node\cf2 * sNode = headNode->pNext;\par
+\par
+\tab\cf6 while\cf2  (sNode != \cf6 nullptr\cf2 )\par
+\tab\{\par
+\tab\tab\cf6 if\cf2  (strcmp(sNode->data.szName, \cf3 str\cf2 ) == \cf6 false\cf2 )\par
+\tab\tab\tab\cf6 break\cf2 ;\par
+\tab\tab\cf6 else\cf2\par
+\tab\tab\tab sNode = sNode->pNext;\par
+\tab\}\par
+\tab\cf6 return\cf2  sNode;\par
+\}\par
+\par
+\cf6 int\cf2  \cf7 CMyList\cf2 ::size() \cf6 const\cf2\par
+\{\par
+\tab\cf6 return\cf2  m_size;\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CMyList\cf2 ::clear()\par
+\{\par
+\tab\cf7 Node\cf2 * dNode;\par
+\tab\cf7 Node\cf2 * cNode = headNode->pNext;\par
+\par
+\tab\cf6 while\cf2  (cNode != \cf6 nullptr\cf2 )\par
+\tab\{\par
+\tab\tab dNode = cNode;\par
+\tab\tab cNode = cNode->pNext;\par
+\par
+\tab\tab\cf6 delete\cf2  dNode;\par
+\tab\tab dNode = \cf6 nullptr\cf2 ;\par
+\tab\}\par
+\}\par
+\par
+\par
+\par
+\par
+\par
+\cf1 //=============================================================\cf2\par
+\par
+\par
+\par
+\par
+\par
+\cf7 CProfile\cf2 ::CProfile()\par
+\{\par
+\tab Initailize();\par
+\}\par
+\par
+\cf7 CProfile\cf2 ::~CProfile()\par
+\{\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CProfile\cf2 ::Initailize()\par
+\{\par
+\tab QueryPerformanceFrequency(&Freq);\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CProfile\cf2 ::ProfileBegin(\cf6 const\cf2  \cf6 char\cf2 * \cf3 TagName\cf2 )\par
+\{\par
+\tab\cf7 Node\cf2 * sNode = MyList.Search_Node(\cf3 TagName\cf2 );\par
+\par
+\tab\cf1 //\'b8\'b8\'be\'e0 \'bc\'b3\'c1\'a4\'b5\'c8 \'b1\'b8\'b0\'a3\'c0\'cc \'be\'f8\'b4\'d9\'b8\'e9 (\'b8\'ae\'bd\'ba\'c6\'ae\'bf\'a1\'bc\'ad \'c3\'a3\'c0\'bb \'bc\'f6 \'be\'f8\'b4\'d9\'b8\'e9)\cf2\par
+\tab\cf6 if\cf2  (sNode == \cf6 nullptr\cf2 )\par
+\tab\{\par
+\tab\tab\cf1 // \'bb\'f5\'b7\'ce\'bf\'ee \'b5\'a5\'c0\'cc\'c5\'cd\'b8\'a6 \'b8\'b8\'b5\'e9\'be\'ee \'b8\'ae\'bd\'ba\'c6\'ae\'bf\'a1 \'c3\'df\'b0\'a1\'c7\'d1\'b4\'d9.\cf2\par
+\tab\tab\cf7 PROFILE_SAMPLE\cf2  nSample;\par
+\tab\tab StringCbCopyA(nSample.szName, \cf6 sizeof\cf2 (nSample.szName), \cf3 TagName\cf2 );\par
+\par
+\tab\tab QueryPerformanceCounter(&Start);\par
+\tab\tab MyList.push_front(nSample);\par
+\tab\}\par
+\tab\cf1 //\'b8\'ae\'bd\'ba\'c6\'ae\'bf\'a1\'bc\'ad \'c3\'a3\'be\'d2\'b4\'d9\'b8\'e9 \'c7\'d8\'b4\'e7 \'b5\'a5\'c0\'cc\'c5\'cd\'bf\'a1 StartTime\'c0\'bb \'c0\'fa\'c0\'e5\cf2\par
+\tab\cf6 else\cf2\par
+\tab\{\par
+\tab\tab QueryPerformanceCounter(&Start);\par
+\tab\tab MyList.push_front(sNode->data);\par
+\tab\}\par
+\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CProfile\cf2 ::ProfileEnd(\cf6 const\cf2  \cf6 char\cf2 * \cf3 TagName\cf2 )\par
+\{\par
+\tab QueryPerformanceCounter(&End);\par
+\tab\cf7 Node\cf2 * sNode = MyList.Search_Node(\cf3 TagName\cf2 );\par
+\tab\par
+\tab\cf1 // \'c0\'fa\'c0\'e5\'b5\'c8 \'b3\'eb\'b5\'e5\'b8\'a6 \'c3\'a3\'c1\'f6 \'b8\'f8\'c7\'df\'c0\'b8\'b9\'c7\'b7\'ce \'be\'c6\'b9\'ab\'c0\'cf\'b5\'b5 \'c7\'cf\'c1\'f6\'be\'ca\'b0\'ed \'b8\'ae\'c5\'cf\'c7\'d1\'b4\'d9\cf2\par
+\tab\cf6 if\cf2  (sNode == \cf6 nullptr\cf2 )\par
+\tab\tab\cf6 return\cf2 ;\par
+\par
+\tab\cf1 // \'bd\'c3\'b0\'a3\'c0\'bb \'b0\'e8\'bb\'ea\'c7\'d8\'bc\'ad TotalTime\'bf\'a1 \'c7\'d5\'bb\'ea\'c7\'d1\'b4\'d9.\cf2\par
+\tab\cf6 double\cf2  DuringTime = (\cf6 double\cf2 )(End.QuadPart - Start.QuadPart) / (\cf6 double\cf2 )Freq.QuadPart;\par
+\tab sNode->data.TotalTime += DuringTime;\par
+\tab\par
+\tab\cf1 //Min \'b0\'e8\'bb\'ea\cf2\par
+\tab\cf1 //[0]\'c0\'cc \'c1\'a6\'c0\'cf \'c0\'db\'c0\'ba\'b0\'aa, [1]\'c0\'cc \'b1\'d7 \'b4\'d9\'c0\'bd\'c0\'b8\'b7\'ce \'c0\'db\'c0\'ba\'b0\'aa\cf2\par
+\tab\cf6 if\cf2  (sNode->data.Min[0] >= DuringTime)\par
+\tab\{\par
+\tab\tab sNode->data.Min[1] = sNode->data.Min[0];\par
+\tab\tab sNode->data.Min[0] = DuringTime;\par
+\tab\}\par
+\tab\cf6 else\cf2  \cf6 if\cf2  (sNode->data.Min[1] >= DuringTime)\par
+\tab\tab sNode->data.Min[1] = DuringTime;\par
+\par
+\par
+\tab\cf1 //Max \'b0\'e8\'bb\'ea\cf2\par
+\tab\cf1 //[0]\'c0\'cc \'c1\'a6\'c0\'cf \'c5\'ab\'b0\'aa, [1]\'c0\'cc \'b1\'d7 \'b4\'d9\'c0\'bd\'c0\'b8\'b7\'ce \'c5\'ab\'b0\'aa\cf2\par
+\tab\cf6 if\cf2  (sNode->data.Max[0] <= DuringTime)\par
+\tab\{\par
+\tab\tab sNode->data.Max[1] = sNode->data.Max[0];\par
+\tab\tab sNode->data.Max[0] = DuringTime;\par
+\tab\}\par
+\tab\cf6 else\cf2  \cf6 if\cf2  (sNode->data.Max[1] <= DuringTime)\par
+\tab\tab sNode->data.Max[1] = DuringTime;\par
+\par
+\tab ++sNode->data.Call;\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CProfile\cf2 ::ProfileDataOutText(\cf6 const\cf2  \cf6 char\cf2 * \cf3 FileName\cf2 )\par
+\{\par
+\tab\par
+\}\par
+\par
+\cf6 void\cf2  \cf7 CProfile\cf2 ::ProfileReset(\cf6 void\cf2 )\par
+\{\par
+\tab MyList.clear();\par
+\}\cf0\f0\fs20\par
+\par
+}
+ 

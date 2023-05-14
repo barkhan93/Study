@@ -1,0 +1,744 @@
+//
+#include "pch.h"
+
+enum class DIRECTION
+{
+    NONE,
+    LEFT,
+    RIGHT
+};
+
+enum class COLOR
+{
+    RED,
+    BLACK,
+    D_BLACK
+};
+
+
+template<typename T>
+class CRBTree
+{
+private:
+    struct Node
+    {
+        COLOR Color = COLOR::RED;
+
+        T data;
+        Node* LeftNode = nullptr;
+        Node* RightNode = nullptr;
+        Node* ParentNode = nullptr;
+        BOOL IsDNILL = FALSE;      //이걸로 해제하자..
+    };
+
+public:
+    explicit CRBTree()
+    {
+        Root = nullptr;
+        NILL = new Node;
+        NILL->LeftNode = NILL;
+        NILL->RightNode = NILL;
+        NILL->ParentNode = NILL;
+        NILL->Color = COLOR::BLACK;
+    }
+    virtual ~CRBTree()
+    {
+        delete NILL;
+        NILL = nullptr;
+    }
+
+public:
+    void NILL_Init(Node* nNode)
+    {
+        nNode->LeftNode = NILL;
+        nNode->RightNode = NILL;
+        nNode->ParentNode = NILL;
+    }
+
+    //자식노드를 넣으면 어느쪽 자식인지 알려줍니다.
+    DIRECTION GetDir(Node* ChildNode)
+    {
+        if (ChildNode->ParentNode == NILL)
+            return DIRECTION::NONE;
+
+        if (ChildNode->ParentNode->RightNode == ChildNode)
+            return DIRECTION::RIGHT;
+        else if (ChildNode->ParentNode->LeftNode == ChildNode)
+            return DIRECTION::LEFT;
+        else
+            return DIRECTION::NONE;
+    }
+
+    //private:
+public:
+    void RightRotate(Node* ParentNode, Node* ChildNode)
+    {
+        if (Root == ParentNode)
+            Root = ChildNode;
+
+        Node* GrandNode = ParentNode->ParentNode;
+        DIRECTION Dir = GetDir(ParentNode);
+
+        //먼저 b를 y에 왼쪽자식으로 연결
+        ParentNode->LeftNode = ChildNode->RightNode;
+        ChildNode->RightNode->ParentNode = ParentNode;
+
+        //x에 오른쪽 자식으로 y를 연결
+        ChildNode->RightNode = ParentNode;
+        ParentNode->ParentNode = ChildNode;
+
+        //x부모에 y부모를 대입
+        if (Dir == DIRECTION::RIGHT)
+            GrandNode->RightNode = ChildNode;
+        else
+            GrandNode->LeftNode = ChildNode;
+
+
+        ChildNode->ParentNode = GrandNode;
+    }
+
+    void LeftRotate(Node* ParentNode, Node* ChildNode)
+    {
+        if (Root == ParentNode)
+            Root = ChildNode;
+
+        Node* GrandNode = ParentNode->ParentNode;
+        DIRECTION Dir = GetDir(ParentNode);
+
+        //x에 오른자식으로 b연결
+        ParentNode->RightNode = ChildNode->LeftNode;
+        ChildNode->LeftNode->ParentNode = ParentNode;
+
+        //y에 왼자식으로 x연결
+        ChildNode->LeftNode = ParentNode;
+        ParentNode->ParentNode = ChildNode;
+
+        //child->ParnetNode는?
+
+        //x부모에 y부모를 대입
+        if (Dir == DIRECTION::RIGHT)
+            GrandNode->RightNode = ChildNode;
+        else
+            GrandNode->LeftNode = ChildNode;
+
+        ChildNode->ParentNode = GrandNode;
+    }
+
+
+
+
+public:
+    BOOL IsEmpty()
+    {
+        return (Root == nullptr);
+    }
+
+    //같은 수 넣는거 지원안됨
+    BOOL Insert(T ndata)
+    {
+        Node* nNode = new Node;
+        nNode->data = ndata;
+        this->NILL_Init(nNode);
+
+        if (this->IsEmpty())
+        {
+            nNode->Color = COLOR::BLACK;
+            Root = nNode;
+
+            return TRUE;
+        }
+
+        Node* pNode = Root;   //parentNode
+        Node* cNode = Root;   //(Loop용) childNode
+
+        while (cNode != NILL)
+        {
+            pNode = cNode;
+            //비교노드의 크기를 비교하여 어느쪽자식으로 갈건지 결정
+            if (nNode->data < cNode->data)
+                cNode = cNode->LeftNode;
+            else
+                cNode = cNode->RightNode;
+        }
+
+        if (pNode->data < nNode->data)
+            pNode->RightNode = nNode;
+        else
+            pNode->LeftNode = nNode;
+
+        nNode->ParentNode = pNode;
+
+        InsertBalance(nNode);
+        return TRUE;
+    }
+
+private:
+    //Dir은 새로추가된 노드가 부모의 어느쪽 자식인지를 뜻함
+    void InsertBalance(Node* nNode)
+    {
+        if (nNode == NILL)
+            return;
+        /////////////////////////////////////////////////////////////
+        //// # 조건 1,2,3은 추가된노드의 부모가 할아버지의 왼쪽자식일때
+        /////////////////////////////////////////////////////////////
+        if (GetDir(nNode->ParentNode) == DIRECTION::LEFT)
+        {
+            //===============================================================================
+            //   # 조건1. 부모RED / 할아버지BLACK / 삼촌 RED
+            //         ( 부모가 RED이므로 할아버지는 반드시 존재 )
+            //===============================================================================
+            //   ㅡ>   할아버지 RED, 삼촌,부모 BLACK전환 (nNode의 할아버지를 nNode로 재시작)
+
+            if (nNode->ParentNode->Color == COLOR::RED &&
+                nNode->ParentNode->ParentNode->Color == COLOR::BLACK &&
+                nNode->ParentNode->ParentNode->RightNode->Color == COLOR::RED)
+            {
+                nNode->ParentNode->Color = COLOR::BLACK;
+                nNode->ParentNode->ParentNode->Color = COLOR::RED;
+                nNode->ParentNode->ParentNode->RightNode->Color = COLOR::BLACK;
+                InsertBalance(nNode->ParentNode->ParentNode);
+            }
+
+
+
+            //===============================================================================
+            //   # 조건2. 부모RED / 할아버지BLACK / 삼촌 BLACK
+            //         내가 부모의 오른쪽 자식 일 경우
+            //===============================================================================
+            // ㅡ>   나와 내 부모를 Left-Rotate하여 조건3으로 맞춰준다. (nNode의 왼자식으로 case3)
+
+            if (nNode->ParentNode->Color == COLOR::RED &&
+                nNode->ParentNode->ParentNode->Color == COLOR::BLACK &&
+                nNode->ParentNode->ParentNode->RightNode->Color == COLOR::BLACK &&
+                GetDir(nNode) == DIRECTION::RIGHT)
+            {
+                LeftRotate(nNode->ParentNode, nNode);
+                nNode = nNode->LeftNode;
+            }
+
+
+
+            //===============================================================================
+            //   # 조건3. 부모RED / 할아버지BLACK / 삼촌 BLACK
+            //         내가 부모의 왼쪽 자식 일 경우
+            //===============================================================================
+            // ㅡ>  내부모와 할아버지를 Right-Rotate   (nNode그대로)
+
+            if (nNode->ParentNode->Color == COLOR::RED &&
+                nNode->ParentNode->ParentNode->Color == COLOR::BLACK &&
+                nNode->ParentNode->ParentNode->RightNode->Color == COLOR::BLACK &&
+                GetDir(nNode) == DIRECTION::LEFT)
+            {
+                nNode->ParentNode->Color = COLOR::BLACK;
+                nNode->ParentNode->ParentNode->Color = COLOR::RED;
+                RightRotate(nNode->ParentNode->ParentNode, nNode->ParentNode);
+            }
+        }
+
+
+        /////////////////////////////////////////////////////////////
+        ////# 조건 4,5,6은 추가된노드의 부모가 할아버지의 오른쪽자식일때
+        /////////////////////////////////////////////////////////////
+        else if (GetDir(nNode->ParentNode) == DIRECTION::RIGHT)
+        {
+            //===============================================================================
+            //   조건4. 부모RED / 할아버지BLACK / 삼촌 RED
+            //         ( 부모가 RED이므로 할아버지는 반드시 존재 )
+            //===============================================================================
+            //   ㅡ>   할아버지 RED, 삼촌,부모 BLACK전환 (nNode의 할아버지를 nNode로 재시작)
+
+            if (nNode->ParentNode->Color == COLOR::RED &&
+                nNode->ParentNode->ParentNode->Color == COLOR::BLACK &&
+                nNode->ParentNode->ParentNode->LeftNode->Color == COLOR::RED)
+            {
+                nNode->ParentNode->Color = COLOR::BLACK;
+                nNode->ParentNode->ParentNode->Color = COLOR::RED;
+                nNode->ParentNode->ParentNode->LeftNode->Color = COLOR::BLACK;
+                InsertBalance(nNode->ParentNode->ParentNode);
+            }
+
+            //===============================================================================
+            //   # 조건5. 부모RED / 할아버지BLACK / 삼촌 BLACK
+            //         내가 부모의 왼쪽 자식 일 경우
+            //===============================================================================
+            // ㅡ>   나와 내 부모를 Right-Rotate하여 조건3으로 맞춰준다. (nNode의 왼자식으로 case6)
+
+            if (nNode->ParentNode->Color == COLOR::RED &&
+                nNode->ParentNode->ParentNode->Color == COLOR::BLACK &&
+                nNode->ParentNode->ParentNode->LeftNode->Color == COLOR::BLACK &&
+                GetDir(nNode) == DIRECTION::LEFT)
+            {
+                RightRotate(nNode->ParentNode, nNode);
+                nNode = nNode->RightNode;
+            }
+
+
+            //===============================================================================
+            //   # 조건6. 부모RED / 할아버지BLACK / 삼촌 BLACK
+            //         내가 부모의 오른쪽 자식 일 경우
+            //===============================================================================
+            // ㅡ>  내부모와 할아버지를 Left-Rotate (nNode그대로)
+
+            if (nNode->ParentNode->Color == COLOR::RED &&
+                nNode->ParentNode->ParentNode->Color == COLOR::BLACK &&
+                nNode->ParentNode->ParentNode->LeftNode->Color == COLOR::BLACK &&
+                GetDir(nNode) == DIRECTION::RIGHT)
+            {
+                nNode->ParentNode->Color = COLOR::BLACK;
+                nNode->ParentNode->ParentNode->Color = COLOR::RED;
+                LeftRotate(nNode->ParentNode->ParentNode, nNode->ParentNode);
+            }
+        }
+
+
+        //밸런싱 작업 후 최종적으로 RootNode의 트리를 Black으로 바꾼다.
+        Root->Color = COLOR::BLACK;
+    }
+
+public:
+    BOOL Delete(T rdata)
+    {
+        if (IsEmpty())
+            return FALSE;
+
+        Node* rNode = Root;  //삭제하려는 노드
+        Node* dNode;         //실제 삭제되는 노드
+
+        //삭제할 노드 찾기
+        while (rNode->data != rdata)
+        {
+            if (rNode->data > rdata)
+                rNode = rNode->LeftNode;
+            else
+                rNode = rNode->RightNode;
+
+            //삭제할 노드를 못찾으면 false리턴
+            if (rNode == NILL)
+                return FALSE;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        ////  삭제할 노드가 자식이 없는 경우                      
+        ///////////////////////////////////////////////////////////////////////////////////
+        if (rNode->RightNode == NILL && rNode->LeftNode == NILL)
+        {
+            //Balance
+            //삭제되는 노드가 black일 경우, 그자리를 대체하는 노드에 검은색을 추가한다.
+            if (rNode->Color == COLOR::BLACK)
+            {
+                //DBLACK으로 만들어 전달할 NILL노드를 만든다
+                Node* DNILL = new Node;
+                NILL_Init(DNILL);
+                DNILL->Color = COLOR::D_BLACK;
+
+                // 삭제될 노드는 부모의 어느쪽 자식인지 확인하여
+                // DNILL을 연결
+                if (GetDir(rNode) == DIRECTION::RIGHT)
+                    rNode->ParentNode->RightNode = DNILL;
+                else
+                    rNode->ParentNode->LeftNode = DNILL;
+
+                DNILL->ParentNode = rNode->ParentNode;
+
+                DeleteBalance(DNILL);
+            }
+
+            delete rNode;
+            rNode = NILL;
+            return TRUE;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        ////  삭제할 노드가 자식이 왼쪽 하나인 경우
+        ///////////////////////////////////////////////////////////////////////////////////
+        else if (rNode->LeftNode != NILL && rNode->RightNode == NILL)
+        {
+            //백업
+            dNode = rNode;
+            Node* BalNode = rNode->LeftNode;      //삭제된 자리에 대체될 노드
+
+            //삭제할 노드의 부모의 자식을 지정
+            if (rNode->ParentNode->LeftNode == rNode)
+                rNode->ParentNode->LeftNode = rNode->LeftNode;
+            else
+                rNode->ParentNode->RightNode = rNode->LeftNode;
+
+            //삭제할 노드의 자식의 부모를 지정
+            rNode->LeftNode->ParentNode = rNode->ParentNode;
+
+
+            //Balance
+            //만약 삭제된 노드가 black이었다면
+            if (dNode->Color == COLOR::BLACK)
+            {
+                //대체될 노드에 black을 추가.
+                if (BalNode->Color == COLOR::BLACK)
+                    BalNode->Color = COLOR::D_BLACK;
+                else if (BalNode->Color == COLOR::RED)
+                    BalNode->Color = COLOR::BLACK;
+
+                DeleteBalance(BalNode);
+            }
+
+            delete dNode;
+            dNode = NILL;
+        }
+
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        //// 삭제할 노드가 자식이 오른쪽 하나인 경우
+        ///////////////////////////////////////////////////////////////////////////////////
+        else if (rNode->LeftNode == NILL && rNode->RightNode != NILL)
+        {
+            //백업
+            dNode = rNode;
+            Node* BalNode = rNode->RightNode;      //삭제된 자리에 대체될 노드
+
+
+            //삭제할 노드의 부모의 자식을 지정
+            if (rNode->ParentNode->LeftNode == rNode)
+                rNode->ParentNode->LeftNode = rNode->RightNode;
+            else
+                rNode->ParentNode->RightNode = rNode->RightNode;
+
+            //삭제할 노드의 자식의 부모를 지정
+            rNode->RightNode->ParentNode = rNode->ParentNode;
+
+
+            //Balance
+            //만약 삭제된 노드가 black이었다면
+            if (dNode->Color == COLOR::BLACK)
+            {
+                //대체될 노드에 black을 추가.
+                if (BalNode->Color == COLOR::BLACK)
+                    BalNode->Color = COLOR::D_BLACK;
+                else if (BalNode->Color == COLOR::RED)
+                    BalNode->Color = COLOR::BLACK;
+
+                DeleteBalance(BalNode);
+            }
+            delete dNode;
+            dNode = NILL;
+        }
+        ///////////////////////////////////////////////////////////////////////////////////
+        //// 삭제할 노드가 자식이 둘인경우
+        ///////////////////////////////////////////////////////////////////////////////////
+        else
+        {
+            UINT IsLoop = FALSE;
+
+            //진짜 삭제될 대체노드(dNode) 찾기
+            dNode = rNode->LeftNode;
+            while (dNode->RightNode != NILL)
+            {
+                IsLoop = TRUE;
+                dNode = dNode->RightNode;
+            }
+
+            //삭제할 노드에 새로들어갈 노드값을 대입
+            rNode->data = dNode->data;
+
+
+            // 지금 상황은 오른쪽 끝 노드이거나, 오른쪽자식이 없는 경우이므로 
+            // 자식이 존재한다면 무조건 왼쪽
+            if (dNode->LeftNode != NILL)
+            {
+
+                Node* BalNode = dNode->LeftNode; // 삭제될노드의 대체노드(자식)
+
+
+                // 진짜 삭제될 노드의 부모자식 연결
+                dNode->LeftNode->ParentNode = dNode->ParentNode;
+
+                //루프를 돌았다면 (왼1오x)이므로 delete될 노드는 부모의 오른쪽자식
+                if (IsLoop == TRUE)
+                    dNode->ParentNode->RightNode = dNode->LeftNode;
+
+                //루프를 돌지않았다면 (왼1)이므로 오른쪽자식이 없음을 뜻함
+                //때문에 delete될 노드의 왼쪽자식만을 연결해주면 된다
+                else
+                    dNode->ParentNode->LeftNode = dNode->LeftNode;
+
+
+                //만약 삭제된 노드가 black이었다면
+                if (dNode->Color == COLOR::BLACK)
+                {
+                    //대체될 노드에 black을 추가.
+                    if (BalNode->Color == COLOR::BLACK)
+                        BalNode->Color = COLOR::D_BLACK;
+                    else if (BalNode->Color == COLOR::RED)
+                        BalNode->Color = COLOR::BLACK;
+
+                    DeleteBalance(BalNode);
+                }
+
+            }
+
+            //진짜 삭제될노드(대체될 노드)가 자식이 없는 경우이므로, 
+            else
+            {
+                if (dNode->Color == COLOR::BLACK)
+                {
+                    //## Blance : 대체노드가 NILL인경우
+                    //DBLACK으로 만들어 전달할 NILL노드를 만든다
+                    Node* DNILL = new Node;
+                    NILL_Init(DNILL);
+                    DNILL->Color = COLOR::D_BLACK;
+
+                    // 삭제될 노드는 부모의 어느쪽 자식인지 확인하여
+                    // DNILL을 연결
+                    if (GetDir(dNode) == DIRECTION::RIGHT)
+                        dNode->ParentNode->RightNode = DNILL;
+                    else
+                        dNode->ParentNode->LeftNode = DNILL;
+
+                    DNILL->ParentNode = dNode->ParentNode;
+                    DeleteBalance(DNILL);
+                }
+            }
+
+            if (GetDir(dNode) == DIRECTION::RIGHT)
+                dNode->ParentNode->RightNode = NILL;
+            else if (GetDir(dNode) == DIRECTION::LEFT)
+                dNode->ParentNode->LeftNode = NILL;
+
+            delete dNode;
+            dNode = NILL;
+
+        }
+
+        return TRUE;
+    }
+
+    //DBLACK인 경우만 Balance처리한다.
+    void DeleteBalance(Node* bNode)
+    {
+
+        while (true)
+        {
+
+            //Balacne에서 처리하는 경우는 balanceNode가 Double black Node이다.
+            if (bNode->Color != COLOR::D_BLACK)
+                break;
+
+            //조건 1234는 bNode가 부모의 왼쪽자식일 경우
+            if (GetDir(bNode) == DIRECTION::LEFT)
+            {
+
+                //===============================================================================
+                //   # 조건 1.
+                //   부모가 black, 삼촌이 red, 삼촌이 red이므로 삼촌의 자식들은 NILL이 아님
+                //===============================================================================
+                // ㅡ> 부모와 삼촌을 LeftRotate하고, 색깔도 바꿔준다.
+
+                if (bNode->ParentNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->RightNode->Color == COLOR::RED &&
+                    bNode->ParentNode->RightNode->RightNode != NILL &&
+                    bNode->ParentNode->RightNode->RightNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->RightNode->LeftNode != NILL &&
+                    bNode->ParentNode->RightNode->LeftNode->Color == COLOR::BLACK)
+                {
+                    bNode->ParentNode->Color = COLOR::RED;
+                    bNode->ParentNode->RightNode->Color = COLOR::BLACK;
+
+                    LeftRotate(bNode->ParentNode, bNode->ParentNode->RightNode);
+
+                    //이거아ㅡ님
+                    //bNode의 삼촌의 왼자식이었으나 회전되어 bNode의 삼촌이 된 노드를 bNode로 하여 다시시작
+                    //bNode = bNode->ParentNode->RightNode;
+                    continue;
+                }
+
+                //===============================================================================
+                //   # 조건 2.
+                //   부모는 gray, 형제이 black, 형제의 자식들도 모두 black 
+                //===============================================================================
+                // ㅡ> bNode와 형제의 black노드를 하나씩 제거하여 부모에게 올려준다.
+
+                if (bNode->ParentNode->RightNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->RightNode->RightNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->RightNode->LeftNode->Color == COLOR::BLACK)
+                {
+                    bNode->Color = COLOR::BLACK;
+                    bNode->ParentNode->RightNode->Color = COLOR::RED;
+
+                    if (bNode->ParentNode->Color == COLOR::RED)
+                        bNode->ParentNode->Color = COLOR::BLACK;
+                    else if (bNode->ParentNode->Color == COLOR::BLACK)
+                        bNode->ParentNode->Color = COLOR::D_BLACK;
+
+                    //bNode의 부모노드를 bNode로 하여 다시 시작
+                    bNode = bNode->ParentNode;
+                    continue;
+                }
+
+
+                //===============================================================================
+                //   # 조건 3.
+                //  부모는 GRAY, 형제이 BLACK, 형제의 왼자식이 RED, 오른자식이 RIGHT
+                //===============================================================================
+                // ㅡ> 형제과 형제의 왼자식을 LeftRotate하여, 조건4로 바꿔준다.
+
+                if (bNode->ParentNode->RightNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->RightNode->LeftNode->Color == COLOR::RED &&
+                    bNode->ParentNode->RightNode->RightNode->Color == COLOR::BLACK)
+                {
+                    bNode->ParentNode->RightNode->Color = COLOR::RED;
+                    bNode->ParentNode->RightNode->LeftNode->Color = COLOR::BLACK;
+                    RightRotate(bNode->ParentNode->RightNode, bNode->ParentNode->RightNode->LeftNode);
+
+                    //bNode 형제의 왼자식이었으나 RightRotate로 bNode의 형제이 된 노드로 다시시작
+                    bNode = bNode->ParentNode->RightNode;
+                    continue;
+                }
+
+                //===============================================================================
+                //   # 조건 4.
+                //  형제이 black, 삼촌의 오른자식이 Red
+                //===============================================================================
+                // ㅡ> 부모와 삼촌을 LeftRotate하고, bNode의 extra black을 삭제한다. 그리고 삼촌의 오른자식을 black
+                if (bNode->ParentNode->RightNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->RightNode->RightNode->Color == COLOR::RED)
+                {
+                    COLOR tmp = bNode->ParentNode->Color;
+                    bNode->ParentNode->Color = bNode->ParentNode->RightNode->Color;
+                    bNode->ParentNode->RightNode->Color = tmp;
+                    bNode->ParentNode->RightNode->RightNode->Color = COLOR::BLACK;
+
+                    LeftRotate(bNode->ParentNode, bNode->ParentNode->RightNode);
+                    bNode->Color = COLOR::BLACK;
+
+                    //조건4의경우 반복문을 멈춘다
+                    break;
+                }
+            }
+            //조건 5678는 bNode가 부모의 오른자식일 경우
+            else if (GetDir(bNode) == DIRECTION::RIGHT)
+            {
+
+                //===============================================================================
+                //   # 조건 5.
+                //   부모는 gray, 삼촌이 black, 삼촌의 자식들도 모두 black 
+                //===============================================================================
+                // ㅡ> 부모와 삼촌을 RightRotate하고, 색깔도 바꿔준다.
+
+
+                if (bNode->ParentNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->LeftNode->Color == COLOR::RED &&
+                    bNode->ParentNode->LeftNode->LeftNode != NILL &&
+                    bNode->ParentNode->LeftNode->LeftNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->LeftNode->RightNode != NILL &&
+                    bNode->ParentNode->LeftNode->RightNode->Color == COLOR::BLACK)
+                {
+                    bNode->ParentNode->Color = COLOR::RED;
+                    bNode->ParentNode->LeftNode->Color = COLOR::BLACK;
+
+                    RightRotate(bNode->ParentNode, bNode->ParentNode->LeftNode);
+
+                    //이거아ㅣ님
+                    //bNode의 삼촌의 왼자식이었으나 회전되어 bNode의 삼촌이 된 노드를 bNode로 하여 다시시작
+                    //bNode = bNode->ParentNode->LeftNode;
+                    continue;
+                }
+
+                //===============================================================================
+                //   # 조건 6.
+                //   부모가 black, 삼촌이 red, 삼촌이 red이므로 삼촌의 자식들은 NILL이 아님
+                //===============================================================================
+                // ㅡ> bNode와 삼촌의 black노드를 하나씩 제거하여 부모에게 올려준다.
+
+                if (bNode->ParentNode->LeftNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->LeftNode->LeftNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->LeftNode->RightNode->Color == COLOR::BLACK)
+                {
+                    bNode->Color = COLOR::BLACK;
+                    bNode->ParentNode->LeftNode->Color = COLOR::RED;
+
+                    if (bNode->ParentNode->Color == COLOR::RED)
+                        bNode->ParentNode->Color = COLOR::BLACK;
+                    else if (bNode->ParentNode->Color == COLOR::BLACK)
+                        bNode->ParentNode->Color = COLOR::D_BLACK;
+
+                    //bNode의 부모노드를 bNode로 하여 다시 시작
+                    bNode = bNode->ParentNode;
+                    continue;
+                }
+
+
+                //===============================================================================
+                //   # 조건 7.
+                //  삼촌이 BLACK, 삼촌의 왼자식이 RED, 오른자식이 RIGHT
+                //===============================================================================
+                // ㅡ> 삼촌과 삼촌의 왼자식을 LeftRotate하여, 조건7로 바꿔준다.
+
+                if (bNode->ParentNode->LeftNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->LeftNode->LeftNode->Color == COLOR::RED &&
+                    bNode->ParentNode->LeftNode->RightNode->Color == COLOR::BLACK)
+                {
+                    bNode->ParentNode->LeftNode->Color = COLOR::RED;
+                    bNode->ParentNode->LeftNode->RightNode->Color = COLOR::BLACK;
+                    LeftRotate(bNode->ParentNode->LeftNode, bNode->ParentNode->LeftNode->RightNode);
+
+                    //bNode 삼촌의 왼자식이었으나 LeftRotate로 bNode의 삼촌이 된 노드로 다시시작
+                    bNode = bNode->ParentNode->LeftNode;
+                    continue;
+                }
+
+                //===============================================================================
+                //   # 조건 8.
+                //  삼촌이 black, 삼촌의 왼자식이 Red
+                //===============================================================================
+                // ㅡ> 부모와 삼촌을 RightRotate하고, bNode의 extra black을 삭제한다.
+                if (bNode->ParentNode->LeftNode->Color == COLOR::BLACK &&
+                    bNode->ParentNode->LeftNode->LeftNode->Color == COLOR::RED)
+                {
+                    COLOR tmp = bNode->ParentNode->Color;
+                    bNode->ParentNode->Color = bNode->ParentNode->LeftNode->Color;
+                    bNode->ParentNode->LeftNode->Color = tmp;
+                    bNode->ParentNode->LeftNode->LeftNode->Color = COLOR::BLACK;
+
+                    RightRotate(bNode->ParentNode, bNode->ParentNode->LeftNode);
+                    bNode->Color = COLOR::BLACK;
+
+                    //조건4의경우 반복문을 멈춘다
+                    break;
+                }
+            }
+            //아무조건도 걸리지않는다면 반복문 멈춤
+            break;
+        }
+        Root->Color = COLOR::BLACK;
+    }
+
+
+private:
+    Node* Root;
+    Node* NILL;
+};
+
+int main()
+{
+    CRBTree<int> Tree;
+    Tree.Insert(1);
+    Tree.Insert(2);
+    Tree.Insert(3);
+    Tree.Insert(4);
+    Tree.Insert(5);
+    Tree.Insert(6);
+    Tree.Insert(7);
+    Tree.Insert(8);
+    Tree.Insert(9);
+    Tree.Insert(10);
+    Tree.Insert(11);
+    Tree.Insert(12);
+    Tree.Insert(13);
+    Tree.Insert(14);
+    Tree.Insert(15);
+    Tree.Insert(16);
+    Tree.Insert(17);
+    Tree.Insert(18);
+
+    Tree.Delete(14);
+
+    int res = 0;
+}
